@@ -13,6 +13,7 @@ import getpass
 import os
 import re
 import secrets
+import string
 import sys
 import time
 from pathlib import Path
@@ -21,6 +22,13 @@ from urllib.parse import quote
 from iphone_hand.serial_link import SerialLink
 
 TOKEN_FILE = Path.home() / ".config/iphone-hand/board-token"
+# Read (firmware protocol.c percent_decode): only whitespace, '%', controls and non-ASCII need
+# escaping. Escaping every symbol tripled long passwords and could overflow the 256-byte line.
+_SAFE = "".join(c for c in string.printable if not c.isspace() and c != "%")
+
+
+def encode(value: str) -> str:
+    return quote(value, safe=_SAFE)
 
 
 def board_token() -> str:
@@ -45,10 +53,14 @@ def main() -> int:
         print("SSID and password are required.", file=sys.stderr)
         return 2
 
+    if len(ssid.encode()) > 32 or not 8 <= len(password.encode()) <= 64:
+        print("SSID must be at most 32 bytes and the WPA password 8..64 bytes.", file=sys.stderr)
+        return 2
+
     link = SerialLink(args.port)
     link.open()
     link.command("TOKEN", board_token())
-    link.command("WIFI", quote(ssid, safe=""), quote(password, safe=""))
+    link.command("WIFI", encode(ssid), encode(password))
     print(f"Sent. Token file: {TOKEN_FILE}. Waiting for the board to join Wi-Fi...")
     for _ in range(30):
         time.sleep(1)

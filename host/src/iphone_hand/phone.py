@@ -12,6 +12,8 @@ from .motion import Motion, MotionError, validate_target
 from .screen import PhoneRect, Screen, find_phone_rect, phone_crop
 from .serial_link import PipelineError, SerialLink
 
+SCROLL_MAX = 2000  # wheel units per axis per SCROLL command (firmware IH_DELTA_MAX)
+
 
 def synchronized(method):
     @wraps(method)
@@ -159,8 +161,10 @@ class Phone:
 
     @synchronized
     def scroll(self, dy: int, dx: int = 0, x: float | None = None, y: float | None = None) -> dict | None:
-        integer(dy, "dy", -32767, 32767)
-        integer(dx, "dx", -32767, 32767)
+        # Read (firmware protocol.h IH_DELTA_MAX): SCROLL accepts +/-2000 per axis. Reject
+        # before positioning so an out-of-range scroll never leaves a half-done action.
+        integer(dy, "dy", -SCROLL_MAX, SCROLL_MAX)
+        integer(dx, "dx", -SCROLL_MAX, SCROLL_MAX)
         if (x is None) != (y is None):
             raise ValueError("scroll location needs both x and y")
         result = self._require_position(x, y) if x is not None else None

@@ -534,6 +534,12 @@ def test_wait_and_scroll_bounds(app_rig):
         assert client.post('/api/'+route,json=body,headers=auth(config)).status_code==422
 
 
+def test_launch_rejects_untypeable_name_before_opening_spotlight(app_rig):
+    _,client,device,_,_,config=app_rig
+    assert client.post('/api/launch',json={'app':'Café'},headers=auth(config)).status_code==422
+    assert not any(c[1]=='KEY' for c in device.commands)
+
+
 def test_supervisor_spawn_error_backoff_and_shutdown_race(tmp_path):
     async def failure():
         calls=[]

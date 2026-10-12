@@ -10,7 +10,8 @@ from iphone_hand.fake import (
     DEFAULT_SYNTHETIC_CURVE,
     IPHONE_XS_MEASURED_CURVE,
 )
-from iphone_hand.motion import HOME_OFFSET, MotionError, PointerHidden, ParametricGainModel
+from iphone_hand.motion import (HOME_OFFSET, MAX_OBSERVATIONS, MotionError, PointerHidden,
+                                ParametricGainModel)
 from iphone_hand.phone import Phone
 from iphone_hand.serial_link import SerialLink
 
@@ -300,6 +301,40 @@ def test_move_to_step_interval_and_adaptive_options(rig):
     res_adapt = phone.motion.move_to(50, 100, adaptive=True)
     assert res_adapt["error_pt"] <= 3
     assert (device.step, device.interval) == (8, 15)
+
+
+def test_adaptive_pacing_reverts_for_corrections(rig):
+    phone, device, _ = rig
+    device.position = [20.0, 20.0]
+    result = phone.motion.move_to(350, 780, adaptive=True)
+    pacing, paces = (8, 15), []
+    for _, command, args in device.commands:
+        if command == "CFG":
+            settings = dict(a.split("=") for a in args)
+            pacing = (int(settings["step"]), int(settings["interval"]))
+        elif command == "MOVE":
+            paces.append(pacing)
+    assert result["iterations"] >= 2 and result["error_pt"] <= 3
+    assert paces[0] == (16, 10)  # The long first move runs fast...
+    assert set(paces[1:]) == {(8, 15)}  # ...and every correction at the standard pacing.
+    assert {o[4:] for o in phone.motion.observations[1:]} == {(8, 15)}
+
+
+def test_calibration_reports_lost_pointer_after_recentring(rig):
+    phone, _, _ = rig
+    # Near an edge, so the plan re-centres; the pointer is then lost.
+    positions = iter([(10.0, 10.0), None])
+    phone.motion._position = lambda attempts=2: next(positions)
+    phone.motion.move_to = lambda x, y: {}
+    with pytest.raises(MotionError, match="Pointer unavailable for calibration"):
+        phone.motion.calibrate()
+
+
+def test_observations_are_bounded(rig):
+    phone, _, _ = rig
+    for _ in range(MAX_OBSERVATIONS + 50):
+        phone.motion._learn((100.0, 100.0), (110.0, 110.0), [10, 10])
+    assert len(phone.motion.observations) == MAX_OBSERVATIONS
 
 
 def test_first_move_error_statistics_before_vs_after():

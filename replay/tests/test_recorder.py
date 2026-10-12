@@ -117,6 +117,24 @@ def test_session_recorder_direct_step(mock_daemon_app, tmp_path: Path):
     assert elem_json["elements"][0]["id"] == "vc1"
 
 
+def test_recording_proxy_requires_token_and_same_origin(mock_daemon_app, tmp_path: Path):
+    recorder = SessionRecorder(daemon_url="http://mock-daemon", token="test-token",
+                               output_dir=tmp_path / "proxy_auth")
+    recorder.client = TestClient(mock_daemon_app, base_url="http://mock-daemon")
+    proxy = TestClient(recorder.create_proxy_app(), base_url="http://127.0.0.1:8791")
+    good = {"Authorization": "Bearer test-token"}
+    # The proxy adds the daemon token itself: without its own check, any local page could tap.
+    assert proxy.post("/api/tap", json={"x": 1, "y": 2}).status_code == 401
+    assert proxy.post("/api/tap", json={"x": 1, "y": 2},
+                      headers={"Authorization": "Bearer wrong"}).status_code == 401
+    assert proxy.post("/api/tap", json={"x": 1, "y": 2},
+                      headers={**good, "Origin": "http://evil.example"}).status_code == 403
+    assert recorder.step_count == 0
+    response = proxy.post("/api/tap", json={"x": 1, "y": 2}, headers=good)
+    assert response.status_code == 200 and recorder.step_count == 1
+    assert proxy.post("/api/home?token=test-token", json={}).status_code == 200
+
+
 def test_recording_proxy_mode(mock_daemon_app, tmp_path: Path):
     out_dir = tmp_path / "proxy_session_1"
     recorder = SessionRecorder(

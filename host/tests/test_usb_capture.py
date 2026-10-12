@@ -10,7 +10,20 @@ from iphone_hand.airplay import FrameUnavailable
 from iphone_hand.daemon import Config, create_app
 from iphone_hand.elements import Elements
 from iphone_hand.screen import PhoneRect
-from iphone_hand.usb_capture import UsbCaptureScreen, UsbCaptureUnavailable, _pt_size
+from iphone_hand.usb_capture import UsbCaptureScreen, UsbCaptureUnavailable, _pt_size, rgba_image
+
+
+def test_rgba_image_honours_padded_row_stride():
+    # Read: CoreGraphics may pad rows; a 3 px wide RGBA row padded to 16 bytes.
+    width, height, stride = 3, 2, 16
+    rows = [bytes([10, 20, 30, 255] * width) + b'\xee' * 4,
+            bytes([40, 50, 60, 255] * width) + b'\xee' * 4]
+    image = rgba_image(b''.join(rows), width, height, stride)
+    assert image.mode == 'RGB' and image.size == (width, height)
+    assert {image.getpixel((x, 0)) for x in range(width)} == {(10, 20, 30)}
+    assert {image.getpixel((x, 1)) for x in range(width)} == {(40, 50, 60)}
+    with pytest.raises(ValueError):
+        rgba_image(b''.join(rows)[:-1], width, height, stride)
 
 
 def frame(w=1125, h=2436):

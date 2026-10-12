@@ -10,6 +10,8 @@ from PIL import Image
 import pytest
 
 from iphone_hand.cli import main
+from iphone_hand.fake import FakePhone
+from iphone_hand.mcp_server import create_server
 
 
 @pytest.mark.parametrize("args", [["status"], ["pointer"], ["move", "10", "20"],
@@ -29,6 +31,21 @@ def test_cli_fake_screenshot(tmp_path, capsys):
 def test_cli_errors(capsys):
     assert main(["--fake", "move", "-1", "2"]) == 1
     assert "target" in capsys.readouterr().err
+
+
+def test_scroll_tool_returns_pointer_recovery_metadata():
+    # The scroll already happened on the phone; reporting it as a tool error invites a retry.
+    recovered = {"x": 10.0, "y": 20.0, "error_pt": 0.0, "iterations": 1, "recovered_with": "esc"}
+
+    class RecoveringPhone(FakePhone):
+        def scroll(self, dy, dx=0, x=None, y=None):
+            super().scroll(dy, dx, x, y)
+            return recovered if x is not None else None
+
+    server = create_server(RecoveringPhone())
+    result = asyncio.run(server.call_tool("scroll", {"dy": 1, "x": 10, "y": 20}))
+    assert json.loads(result[0][0].text) == recovered
+    assert asyncio.run(server.call_tool("scroll", {"dy": 1}))[1] == {"result": None}
 
 
 def test_official_sdk_stdio_round_trip():
