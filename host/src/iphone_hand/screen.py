@@ -1,6 +1,6 @@
 """ADB frame capture, byte parsers, phone rectangle, and point coordinates."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from io import BytesIO
 import os
 import struct
@@ -11,7 +11,11 @@ from collections.abc import Callable
 import numpy as np
 from PIL import Image
 
-PHONE_PT = (375, 812)
+from . import geometry
+from .geometry import Geometry
+
+# The reference phone (iPhone XS); actual sizes come from PhoneRect.geometry.
+PHONE_PT = geometry.REFERENCE_PT
 PUBLIC_SIZE = (750, 1624)
 
 
@@ -21,14 +25,25 @@ class PhoneRect:
     y: int
     width: int
     height: int
-    # Point space the frame maps to. 375x812 (iPhone X/XS/11 Pro) is the SPEC contract and
-    # stays the default; USB capture derives it from the frame and a per-model px/pt scale.
+    # Point space the frame maps to. 375x812 (iPhone X/XS/11 Pro) is the SPEC reference and
+    # stays the default; find_phone_rect fills it from geometry.detect.
     pt_width: int = 375
     pt_height: int = 812
+    source: str = field(default="default", compare=False)
+    candidates: tuple = field(default=(), compare=False)
 
     @property
     def box(self) -> tuple[int, int, int, int]:
         return self.x, self.y, self.x + self.width, self.y + self.height
+
+    @property
+    def pt(self) -> tuple[int, int]:
+        return self.pt_width, self.pt_height
+
+    @property
+    def geometry(self) -> Geometry:
+        return Geometry(self.pt_width, self.pt_height, self.width / self.pt_width, self.source,
+                        self.candidates)
 
     def px_to_pt(self, x: float, y: float) -> tuple[float, float]:
         return (x - self.x) * self.pt_width / self.width, (y - self.y) * self.pt_height / self.height
@@ -37,27 +52,39 @@ class PhoneRect:
         return self.x + x * self.width / self.pt_width, self.y + y * self.height / self.pt_height
 
 
-def find_phone_rect(image: Image.Image) -> PhoneRect:
+def _locate(image: Image.Image, family: str) -> tuple[int, int, int, int]:
     w, h = image.size
-    # Already a phone crop (also used by the synthetic screen source).
-    if abs(w / h - 375 / 812) < 0.01:
-        return PhoneRect(0, 0, w, h)
+    # Already a phone crop in either orientation (AirPlay, USB, synthetic screen sources).
+    if geometry.known_aspect(w, h, family=family):
+        return 0, 0, w, h
+    # Portal letterboxing: the phone is the largest non-black column band of a portrait screen.
     rgb = np.asarray(image.convert("RGB"))
     active = (rgb.max(axis=2) > 12).mean(axis=0) >= 0.01
     edges = np.diff(np.r_[False, active, False].astype(int))
     bands = list(zip(np.flatnonzero(edges == 1), np.flatnonzero(edges == -1)))
     if bands:
         left, right = max(bands, key=lambda b: b[1] - b[0])
-        if abs((right - left) / h - 375 / 812) < 0.07:
-            return PhoneRect(int(left), 0, int(right - left), h)
+        if (right - left) < h and geometry.known_aspect(right - left, h, family=family, tolerance=0.07):
+            return int(left), 0, int(right - left), h
     # Read: measured Portal bounds in SPEC, scaled for a resized Portal frame.
     left, right = round(747 * w / 2160), round(1413 * w / 2160)
-    return PhoneRect(left, 0, right - left, h)
+    return left, 0, right - left, h
+
+
+def find_phone_rect(image: Image.Image, *, screen_pt=None, px_per_pt: float = 0.0,
+                    native: bool = False, family: str = "iphone") -> PhoneRect:
+    """Crop out letterboxing, then decide the point size (geometry.detect)."""
+    x, y, w, h = _locate(image, family)
+    found = geometry.detect((w, h), screen_pt=screen_pt, px_per_pt=px_per_pt, native=native,
+                            family=family)
+    return PhoneRect(x, y, w, h, found.pt_width, found.pt_height, found.source, found.candidates)
 
 
 def phone_crop(image: Image.Image, rect: PhoneRect | None = None) -> Image.Image:
-    return image.crop((rect or find_phone_rect(image)).box).convert("RGB").resize(
-        PUBLIC_SIZE, Image.Resampling.LANCZOS)
+    """Phone screen at exactly 2 px per pt (750x1624 for the 375x812 reference)."""
+    rect = rect or find_phone_rect(image)
+    return image.crop(rect.box).convert("RGB").resize(rect.geometry.public_size,
+                                                      Image.Resampling.LANCZOS)
 
 
 def parse_png(data: bytes) -> Image.Image:
@@ -88,6 +115,8 @@ def parse_raw(data: bytes) -> Image.Image:
 
 
 class Screen:
+    frames_native = False  # Portal mirror: rescaled, so only the aspect ratio is known.
+
     def __init__(self, serial: str | None = None, *, mode: str = "png", timeout: float = 15,
                  runner: Callable | None = None):
         if mode not in {"png", "raw"}:

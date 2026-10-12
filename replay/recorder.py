@@ -25,7 +25,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response, StreamingResponse
 from starlette.routing import Route
 
-from .manifest import ActionRecord, SessionManifest, StepRecord
+from .manifest import REFERENCE_PT, ActionRecord, SessionManifest, StepRecord
 
 
 class SessionRecorder:
@@ -38,6 +38,7 @@ class SessionRecorder:
         output_dir: Path | str,
         session_id: str | None = None,
         scale: str | None = None,
+        screen_size_pt: list[int] | None = None,
     ):
         self.daemon_url = daemon_url.rstrip("/")
         self.token = token
@@ -45,6 +46,8 @@ class SessionRecorder:
         self.scale = scale
         self.session_id = session_id or f"session_{int(time.time())}"
         self.step_count = 0
+        # Explicit size, else the daemon's GET /api/state screen.pt at the first step.
+        self.screen_size_fixed = screen_size_pt is not None
 
         # Create directories
         self.frames_dir = self.output_dir / "frames"
@@ -57,7 +60,7 @@ class SessionRecorder:
             session_id=self.session_id,
             created_at=datetime.now(timezone.utc).isoformat(),
             daemon_url=self.daemon_url,
-            screen_size_pt=[375, 812],
+            screen_size_pt=list(screen_size_pt or REFERENCE_PT),
             steps=[],
         )
         self.manifest_file = self.output_dir / "manifest.json"
@@ -98,10 +101,19 @@ class SessionRecorder:
         resp.raise_for_status()
         return resp.json()
 
+    def fetch_screen_size(self) -> list[int]:
+        """The daemon's screen size in points; the reference when the daemon does not report it."""
+        pt = (self.fetch_state().get("screen") or {}).get("pt")
+        if isinstance(pt, list) and len(pt) == 2 and all(type(v) is int and v > 0 for v in pt):
+            return pt
+        return list(REFERENCE_PT)
+
     def record_step(self, action: str, **action_args) -> dict[str, Any]:
         """Execute one action on the daemon and record the step to the dataset."""
         step_idx = self.step_count
         timestamp = time.time()
+        if step_idx == 0 and not self.screen_size_fixed:
+            self.manifest.screen_size_pt = self.fetch_screen_size()
 
         # 1. Capture pre-action frame and elements
         pre_frame_bytes = self.fetch_frame()

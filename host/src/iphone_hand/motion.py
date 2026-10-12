@@ -14,6 +14,7 @@ import time
 
 import numpy as np
 
+from .geometry import REFERENCE_PT, size_label
 from .serial_link import SerialLink
 from . import keys
 
@@ -46,9 +47,18 @@ def validate_recover_key(combo: str) -> str:
     return combo.strip().lower()
 
 
-def validate_target(x: float, y: float) -> None:
-    if not (math.isfinite(x) and math.isfinite(y) and 0 <= x <= 375 and 0 <= y <= 812):
-        raise ValueError("target must be finite phone points inside 0..375 by 0..812")
+def validate_target(x: float, y: float, bounds: tuple[int, int] = REFERENCE_PT) -> None:
+    w, h = bounds
+    if not (math.isfinite(x) and math.isfinite(y) and 0 <= x <= w and 0 <= y <= h):
+        raise ValueError(f"target must be finite phone points inside 0..{w} by 0..{h}")
+
+
+def profile_key(bounds) -> str:
+    """Calibration profile per screen size, orientation-independent ("375x812")."""
+    return size_label(sorted(bounds))
+
+
+REFERENCE_PROFILE = profile_key(REFERENCE_PT)
 
 
 class ParametricGainModel:
@@ -227,10 +237,20 @@ class ParametricGainModel:
 
 
 class Motion:
+    """Closed-loop pointer motion in the current screen's points.
+
+    `bounds()` returns the screen size in points (Phone passes its detected geometry). Gains
+    are learned per screen size: the 375x812 reference profile keeps the version-2 top-level
+    cache layout, other sizes live under "profiles" and start uncalibrated until `calibrate`
+    runs on that phone (estimated: AssistiveTouch tracking speed and acceleration can differ
+    per model and per user setting; never copy another phone's numbers).
+    """
+
     def __init__(self, link: SerialLink, locate: Callable, *, settle: float = 0.350,
                  calibration_path: Path | None = None, persist: bool = True,
                  step: int = 8, interval: int = 15, sleeper: Callable = time.sleep,
-                 pointer_recover_key: str = ""):
+                 pointer_recover_key: str = "", bounds: Callable | None = None,
+                 discover: Callable | None = None):
         if not (1 <= step <= 127 and 5 <= interval <= 100):
             raise ValueError("CFG step must be 1..127 and interval 5..100")
         if not math.isfinite(settle) or settle < 0:
@@ -243,17 +263,45 @@ class Motion:
         self.step, self.interval = step, interval
         self.path = calibration_path or Path.home() / ".config/iphone-hand/calibration.json"
         self.persist = persist
+        self.bounds = bounds or (lambda: REFERENCE_PT)
+        # Called before rejecting a target outside bounds() that may come from no frame yet.
+        self.discover = discover
+        self.screen = REFERENCE_PT
+        self.profile = REFERENCE_PROFILE
+        self._reset_gains()
+        if persist:
+            self._load()
+
+    def _reset_gains(self) -> None:
         self.counts_per_pt = [1.0, 1.0]  # Estimated until observations replace them.
         self.samples = [0, 0]
         self.observations: list[tuple[int, int, float, float, int, int]] = []
         self.model = ParametricGainModel()
         self.cache_error: str | None = None
-        if persist:
-            self._load()
+
+    def _ensure_profile(self) -> tuple[int, int]:
+        """Follow the current screen size; switching size loads that size's profile."""
+        bounds = tuple(self.bounds())
+        key = profile_key(bounds)
+        if key != self.profile:
+            self.profile = key
+            self._reset_gains()
+            if self.persist:
+                self._load()
+        self.screen = bounds
+        return bounds
+
+    def _profile_data(self, data: dict) -> dict | None:
+        if self.profile == REFERENCE_PROFILE:
+            return data if "step" in data else None
+        profile = data.get("profiles", {}).get(self.profile)
+        return profile if isinstance(profile, dict) else None
 
     def _load(self) -> None:
         try:
-            data = json.loads(self.path.read_text())
+            data = self._profile_data(json.loads(self.path.read_text()))
+            if data is None:
+                return
             if data["step"] != self.step or data["interval"] != self.interval:
                 return
             if "model" in data and isinstance(data["model"], dict):
@@ -280,6 +328,18 @@ class Motion:
                 "counts_per_pt": self.counts_per_pt,
                 "model": self.model.to_dict(),
             }
+            try:
+                existing = json.loads(self.path.read_text())
+                existing = existing if isinstance(existing, dict) else {}
+            except (OSError, ValueError):
+                existing = {}
+            if self.profile == REFERENCE_PROFILE:
+                # Version-2 readers keep working: the reference stays at the top level.
+                payload = {**payload, **({"profiles": existing["profiles"]} if "profiles" in existing else {})}
+            else:
+                profiles = dict(existing.get("profiles", {}))
+                profiles[self.profile] = {**payload, "screen_pt": sorted(self.screen)}
+                payload = {**existing, "profiles": profiles}
             temp.write_text(json.dumps(payload) + "\n")
             temp.replace(self.path)
         except OSError:
@@ -313,7 +373,8 @@ class Motion:
     def _learn(self, before, after, counts, step: int | None = None, interval: int | None = None) -> None:
         step = step or self.step
         interval = interval or self.interval
-        for axis, bound in enumerate((375, 812)):
+        width, height = self.screen
+        for axis, bound in enumerate(self.screen):
             delta = after[axis] - before[axis]
             if abs(counts[axis]) < 4 or abs(delta) < 2 or delta * counts[axis] <= 0:
                 continue
@@ -328,8 +389,8 @@ class Motion:
                 self.samples[axis] += 1
 
         # Record unclamped observation for model fitting
-        if (1 < after[0] < 374 and 1 < after[1] < 811 and
-            1 < before[0] < 374 and 1 < before[1] < 811):
+        if (1 < after[0] < width - 1 and 1 < after[1] < height - 1 and
+            1 < before[0] < width - 1 and 1 < before[1] < height - 1):
             dx_pt = after[0] - before[0]
             dy_pt = after[1] - before[1]
             if abs(dx_pt) > 0.5 or abs(dy_pt) > 0.5:
@@ -353,7 +414,11 @@ class Motion:
 
     def move_to(self, x: float, y: float, *, step: int | None = None,
                 interval: int | None = None, adaptive: bool = False) -> dict:
-        validate_target(x, y)
+        bounds = self._ensure_profile()
+        if self.discover is not None and not (0 <= x <= bounds[0] and 0 <= y <= bounds[1]):
+            self.discover()
+            bounds = self._ensure_profile()
+        validate_target(x, y, bounds)
         eff_step = step if step is not None else self.step
         eff_interval = interval if interval is not None else self.interval
         self.link.command("CFG", f"step={eff_step}", f"interval={eff_interval}")
@@ -372,10 +437,15 @@ class Motion:
             position = self._reveal_and_home()
         if position is None:
             raise PointerHidden(recovered_with)
+        if self._ensure_profile() != bounds:
+            # The first frame changed the screen size; check the target again before moving.
+            bounds = self.screen
+            validate_target(x, y, bounds)
+        width, height = bounds
 
         target = (x, y)
         # Approach edge targets from an interior staging point, then finish.
-        inside = (max(12, min(363, x)), max(12, min(800, y)))
+        inside = (max(12, min(width - 12, x)), max(12, min(height - 12, y)))
         staging = inside != target and math.dist(position, target) > 20
         iterations = 0
 
@@ -428,16 +498,23 @@ class Motion:
         return result
 
     def calibrate(self) -> dict:
-        """Observe fixed-pacing moves inside the screen, fitting the parametric model."""
+        """Observe fixed-pacing moves inside the screen, fitting the parametric model.
+
+        Run once per phone (per screen-size profile) on hardware; the plan stays inside the
+        screen's interior (80 pt from the sides, 150 pt from the top and 152 pt from the bottom,
+        the XS window [80..295, 150..660] scaled to the current size).
+        """
         self.link.command("CFG", f"step={self.step}", f"interval={self.interval}")
         pos = self._position()
+        width, height = self._ensure_profile()
+        centre = (width / 2, height / 2)
         if pos is None:
-            self.move_to(187.5, 406.0)
+            self.move_to(*centre)
             pos = self._position()
             if pos is None:
                 raise MotionError("Pointer unavailable for calibration")
         else:
-            self.move_to(187.5, 406.0)
+            self.move_to(*centre)
             pos = self._position()
 
         # Calibration sample plan: sizes, directions, and balanced return moves
@@ -462,8 +539,8 @@ class Motion:
 
         for dx, dy in plan:
             # Re-center if pointer drifted too close to bounds
-            if pos[0] < 80 or pos[0] > 295 or pos[1] < 150 or pos[1] > 660:
-                self.move_to(187.5, 406.0)
+            if pos[0] < 80 or pos[0] > width - 80 or pos[1] < 150 or pos[1] > height - 152:
+                self.move_to(*centre)
                 pos = self._position()
 
             after = self._move(dx, dy)
@@ -481,10 +558,11 @@ class Motion:
         self.counts_per_pt = self.model.nominal_counts_per_pt(self.step, self.interval)
 
         # Move back to center
-        self.move_to(187.5, 406.0)
+        self.move_to(*centre)
         self._save()
 
         return {
+            "profile": self.profile,
             "counts_per_pt": list(self.counts_per_pt),
             "step": self.step,
             "interval": self.interval,

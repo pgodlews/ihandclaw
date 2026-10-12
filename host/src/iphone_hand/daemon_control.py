@@ -7,8 +7,11 @@ import time
 
 from .airplay import FrameUnavailable
 from .elements import password_prompt
+from .geometry import default_geometry
 from .phone import integer
 from .link_errors import link_error_class
+from .pointer import find_pointer
+from .screen import PhoneRect
 
 
 class Paused(RuntimeError):
@@ -67,6 +70,20 @@ class Controller:
         self.paused.set() if value else self.paused.clear()
         return self.cached_state()
 
+    def geometry(self):
+        get = getattr(self.phone, 'geometry', None)
+        return get() if get else default_geometry()
+
+    def rect(self, frame):
+        """Screen rect and point size of a frame: the Phone's resolver is the one source."""
+        resolve = getattr(self.phone, 'phone_rect', None)
+        if resolve is not None:
+            return resolve(frame)
+        return PhoneRect(0, 0, *frame.size, *self.geometry().pt)
+
+    def public_size(self, frame):
+        return self.rect(frame).geometry.public_size
+
     def cached_state(self):
         with self.log_lock:
             return {**self._state, 'paused': self.paused.is_set(), 'action_log': list(self.log)}
@@ -77,11 +94,12 @@ class Controller:
             airplay['receiver_name'] = getattr(self, 'receiver_name', 'iPhone Hand')
             airplay['frame_source'] = getattr(self, 'frame_source', 'airplay')
             position = None
+            screen = self.geometry()
             try:
                 frame = self.screen.grab()
-                from .pointer import find_pointer
-                from .screen import PhoneRect
-                position = find_pointer(frame, PhoneRect(0, 0, *frame.size))
+                rect = self.rect(frame)
+                screen = rect.geometry
+                position = find_pointer(frame, rect, getattr(self.phone, 'pointer_detector', None))
             except FrameUnavailable:
                 pass
             try:
@@ -95,13 +113,16 @@ class Controller:
             except Exception as error:
                 hardware = {'ble': {'conn': False, 'ready': False}}
                 link = {'connected': False, 'error': link_error_class(error)}
-            self._state = {**hardware, 'link': link, 'airplay': airplay,
+            self._state = {**hardware, 'link': link, 'airplay': airplay, 'screen': screen.to_dict(),
                            'pointer': dict(zip(('x', 'y', 'confidence'), position)) if position else None,
                            'receiver': self.receiver.status() if self.receiver else None}
             return self.cached_state()
 
     def elements(self):
-        return self.detector.analyze(self.screen.grab())
+        return self.analyze(self.screen.grab())
+
+    def analyze(self, frame):
+        return self.detector.analyze(frame, self.rect(frame))
 
     def _type(self, text, *, window=8, hold_ms=None):
         if not isinstance(text, str) or len(text) > 4096:
@@ -160,7 +181,9 @@ class Controller:
         if action == 'back':
             if args:
                 raise ValueError('back takes no arguments')
-            return self.phone.drag(3, 406, 280, 406, steps=10)
+            # Left-edge swipe at mid height to 75 % of the width (280, 406 on the 375x812 reference).
+            width, height = self.geometry().pt
+            return self.phone.drag(3, height / 2, round(width * 280 / 375), height / 2, steps=10)
         if action in ('launch', 'run_shortcut'):
             field = 'app' if action == 'launch' else 'name'
             name = args.get(field)
@@ -199,7 +222,7 @@ class Controller:
             # Typed strings, app names, combos, and exceptions may contain secrets. Do not log them.
             try:
                 self.check()
-                self.screen.grab()  # Fail closed on a disconnected/stale mirror.
+                self.rect(self.screen.grab())  # Fail closed on a stale mirror; refresh geometry.
                 result = self._execute(action, args)
                 entry['ok'] = True
                 if isinstance(result, dict) and result.get('recovered_with'):

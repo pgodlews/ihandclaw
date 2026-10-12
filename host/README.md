@@ -41,7 +41,8 @@ device = FakeSerialDevice()
 with Phone(SerialLink(transport=device), SimulatedScreen(device),
            settle=0, persist_calibration=False) as phone:
     print(phone.move_to(100, 200))
-    image = phone.screenshot()  # PIL image, 750 x 1624
+    image = phone.screenshot()  # PIL image at 2 px/pt: 750 x 1624 for 375 x 812
+    print(phone.geometry().to_dict())  # point size of the latest frame (SPEC section 9)
 ```
 
 Read (MCP): launch `uv run iphone-hand-mcp` from `host/` for stdio. The eleven

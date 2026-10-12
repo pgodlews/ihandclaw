@@ -29,12 +29,14 @@ def mjpeg_part(data):
     return b'--frame\r\nContent-Type: image/jpeg\r\nContent-Length: '+str(len(data)).encode()+b'\r\n\r\n'+data+b'\r\n'
 
 
-async def mjpeg_frames(screen, disconnected, *, sleeper=asyncio.sleep):
+async def mjpeg_frames(screen, disconnected, *, sleeper=asyncio.sleep, size=None):
+    """`size(frame)` gives the pt2 size (2 px per pt); default: the 375x812 reference."""
     while not await disconnected():
         started = asyncio.get_running_loop().time()
         try:
             def frame():
-                return jpeg(screen.grab().resize(PUBLIC_SIZE))
+                image = screen.grab()
+                return jpeg(image.resize(size(image) if size else PUBLIC_SIZE))
             yield mjpeg_part(await asyncio.to_thread(frame))
         except FrameUnavailable:
             pass  # Keep connection alive while the receiver recovers; never send stale images.
@@ -166,14 +168,14 @@ def create_app(config, phone, screen, elements, supervisor=None, receiver=None):
             if scale not in (None, 'pt2'):
                 return JSONResponse({'error': 'scale must be pt2'}, 422)
             if scale == 'pt2':
-                image = image.resize(PUBLIC_SIZE)
+                image = image.resize(controller.public_size(image))
             return Response(jpeg(image), media_type='image/jpeg')
         except FrameUnavailable:
             return JSONResponse({'error': 'No fresh AirPlay frame'}, 503)
 
     @app.get('/api/stream.mjpeg')
     async def stream(request: Request):
-        return StreamingResponse(mjpeg_frames(screen, request.is_disconnected),
+        return StreamingResponse(mjpeg_frames(screen, request.is_disconnected, size=controller.public_size),
                                  media_type='multipart/x-mixed-replace; boundary=frame')
 
     state_task = None
@@ -197,7 +199,7 @@ def create_app(config, phone, screen, elements, supervisor=None, receiver=None):
     def get_elements(annotate: bool = False):
         try:
             frame = screen.grab()
-            result = controller.detector.analyze(frame)
+            result = controller.analyze(frame)
             if annotate:
                 return Response(jpeg(controller.detector.annotate(frame, result)), media_type='image/jpeg')
             return JSONResponse(result['elements'], headers={

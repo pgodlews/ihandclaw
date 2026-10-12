@@ -67,6 +67,7 @@ receiver = "external"
 frame_source = "airplay"               # or "usb" (see "USB capture"); Linux is airplay-only
 frames_dir = "/Volumes/iphone-hand-frames/frames"   # airplay only; matches the receiver plist
 # usb_pt_scale = 3.0027                # usb only: px/pt override; 0 = derive from the frame
+# screen_pt = [390, 844]               # point-size override (SPEC section 9); airplay: needed for non-375x812 Face ID iPhones
 ```
 
 Read: on macOS the default frames dir is `~/Library/Caches/iphone-hand/frames`
@@ -180,10 +181,11 @@ Expected stream [read]: qvh issue #81 — default 60 fps at the device's native 
 (iPhone XS: 1125x2436; [read] Apple HIG), wire codec H.264 decoded by the system; qvh issue #95
 — real throughput is variable, often below 60 fps, use PTS. [estimated] Expect ~30-60 fps
 depending on motion. Points mapping: the frame size comes from the capture; points are derived
-via `usb_pt_scale` (XS: 3.0027 px/pt, measured 2026-10-12 over AirPlay) or auto-derived
-(integer Retina scale + known iPhone point widths — see `_pt_size`). Open risk: 375x812 is still
-hard-coded in docs/SPEC.md and the droidclaw UIElement contract (`elements.py` bounds strings),
-so non-XS point spaces are only mapped, not contract-supported.
+via `usb_pt_scale` (XS: 3.0027 px/pt, measured 2026-10-12 over AirPlay) or auto-derived by
+matching native pixels against `geometry.IPHONE_SIZES` (see `_pt_size`, SPEC section 9). The
+daemon reports the result in `/api/state` `screen`; agents and adapters read it. Open risk
+(estimated): droidclaw's own iPhone backend lives outside this repo and must read `screen.pt`
+rather than assume 375x812.
 
 Can AirPlay mirroring and USB capture run simultaneously? Not determinable from public sources
 (no statement in qvh, Apple docs, or forums; treat as unknown and test on hardware). The daemon

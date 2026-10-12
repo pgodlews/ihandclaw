@@ -20,6 +20,9 @@ def mask_status_bar(
 
     On iPhone XS (375x812 pt), status bar is ~44 pt (~5.4%) and home bar is ~34 pt (~4.2%).
     Masking these areas ensures recordings taken at different minutes/battery levels match cleanly.
+    Estimated: the fractions are XS values with margin; other portrait Face ID iPhones have
+    similar inset fractions but this is unmeasured, and home-button iPhones or landscape frames
+    need other ratios (pass top_ratio/bottom_ratio). Graphs never mix screen sizes.
     """
     img = image.copy().convert("RGB")
     w, h = img.size

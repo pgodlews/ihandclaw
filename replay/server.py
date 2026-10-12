@@ -3,10 +3,10 @@
 Follows docs/SPEC.md (sections 6 and 8).
 Serves the exact same HTTP routes as the real daemon:
 - GET /: Web dashboard with screen, overlays, and action log
-- GET /api/frame.jpg: Current screen frame (JPEG, supports ?scale=pt2 for 750x1624)
+- GET /api/frame.jpg: Current screen frame (JPEG, ?scale=pt2 = 2 px per pt of the graph's screen_size_pt)
 - GET /api/stream.mjpeg: MJPEG stream
 - GET /api/elements: DroidClaw UIElement JSON (supports ?annotate=1 for marked frame)
-- GET /api/state: Daemon state, BLE/link status, action log, off-path stats
+- GET /api/state: Daemon state, screen size, BLE/link status, action log, off-path stats
 - POST /api/pause: Pause/unpause actions
 - POST /api/reset: Reset simulator back to initial screen
 - POST /api/{action}: Executes tap/key/type/etc. against the screen graph
@@ -40,7 +40,12 @@ from .graph import ScreenGraph, ScreenNode, Transition
 from .manifest import parse_bounds
 
 logger = logging.getLogger("replay.server")
-PUBLIC_SIZE = (750, 1624)  # 2 px per pt for 375x812 pt iPhone XS
+PUBLIC_SIZE = (750, 1624)  # 2 px per pt for the 375x812 pt reference (iPhone XS)
+
+
+def public_size(screen_size_pt) -> tuple[int, int]:
+    """pt2 frame size: exactly 2 px per pt of the recorded screen."""
+    return 2 * int(screen_size_pt[0]), 2 * int(screen_size_pt[1])
 
 
 def is_password_screen(elements: list[dict[str, Any]]) -> bool:
@@ -51,12 +56,13 @@ def is_password_screen(elements: list[dict[str, Any]]) -> bool:
     )
 
 
-def annotate_frame(image: Image.Image, elements: list[dict[str, Any]], pointer: dict[str, Any] | None = None) -> Image.Image:
+def annotate_frame(image: Image.Image, elements: list[dict[str, Any]], pointer: dict[str, Any] | None = None,
+                   screen_size_pt=(375, 812)) -> Image.Image:
     """Draw cyan bounding boxes and element labels on frame, matching SPEC section 8."""
     img = image.copy().convert("RGB")
     draw = ImageDraw.Draw(img)
     font = ImageFont.load_default()
-    sx, sy = img.width / 375.0, img.height / 812.0
+    sx, sy = img.width / float(screen_size_pt[0]), img.height / float(screen_size_pt[1])
 
     for item in elements:
         bounds = item.get("bounds_pt") or parse_bounds(item.get("bounds", ""))
@@ -173,8 +179,11 @@ class ReplayServer:
         if path.exists():
             img = Image.open(path).convert("RGB")
         else:
-            # Fallback synthetic frame if image file not on disk
-            img = Image.new("RGB", (1126, 2434), color=(30, 30, 40))
+            # Fallback synthetic frame if image file not on disk: the measured XS AirPlay size
+            # for the reference, else @3x of the graph's screen size.
+            w, h = self.graph.screen_size_pt
+            size = (1126, 2434) if [w, h] == [375, 812] else (3 * w, 3 * h)
+            img = Image.new("RGB", size, color=(30, 30, 40))
             draw = ImageDraw.Draw(img)
             draw.text((100, 100), f"Replay: {node.screen_id}", fill="white")
 
@@ -190,6 +199,9 @@ class ReplayServer:
             "total_actions": self.total_actions,
             "matched_actions": self.matched_actions,
             "pointer": node.pointer,
+            "screen": {"pt": list(self.graph.screen_size_pt), "source": "recording", "ambiguous": False,
+                       "orientation": "landscape" if self.graph.screen_size_pt[0] > self.graph.screen_size_pt[1]
+                       else "portrait", "candidates": []},
             "link": {"connected": True, "kind": "replay"},
             "ble": {"conn": True, "ready": True},
             "airplay": {"mirroring": True, "fps": 60, "source": "replay_simulator"},
@@ -334,7 +346,7 @@ def create_replay_app(
 
         img = server.load_image(node)
         if scale == "pt2":
-            img = img.resize(PUBLIC_SIZE, Image.Resampling.LANCZOS)
+            img = img.resize(public_size(server.graph.screen_size_pt), Image.Resampling.LANCZOS)
 
         buf = BytesIO()
         img.save(buf, format="JPEG", quality=85)
@@ -344,7 +356,8 @@ def create_replay_app(
         async def frame_generator():
             while True:
                 node = server.current_node
-                img = server.load_image(node).resize(PUBLIC_SIZE, Image.Resampling.LANCZOS)
+                img = server.load_image(node).resize(public_size(server.graph.screen_size_pt),
+                                                     Image.Resampling.LANCZOS)
                 buf = BytesIO()
                 img.save(buf, format="JPEG", quality=80)
                 data = buf.getvalue()
@@ -363,7 +376,7 @@ def create_replay_app(
         annotate = request.query_params.get("annotate") in ("1", "true", "True")
         if annotate:
             img = server.load_image(node)
-            annotated = annotate_frame(img, node.elements, node.pointer)
+            annotated = annotate_frame(img, node.elements, node.pointer, server.graph.screen_size_pt)
             buf = BytesIO()
             annotated.save(buf, format="JPEG", quality=85)
             return Response(buf.getvalue(), media_type="image/jpeg")

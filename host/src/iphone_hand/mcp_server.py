@@ -33,7 +33,7 @@ def create_server(phone=None, *, threaded: bool = False, **settings) -> FastMCP:
 
     @tool(structured_output=False)
     def screenshot(mark_pointer: bool = True) -> list[ImageContent | TextContent]:
-        """PNG 750x1624 (2 px/pt) and the detected pointer in phone points."""
+        """PNG at 2 px/pt (750x1624 for 375x812 pt; see status screen.pt) and the pointer in points."""
         with capture_lock:
             # The standard Phone API is sufficient for third-party doubles;
             # our optional extension gets metadata atomically from one frame.
@@ -102,7 +102,7 @@ def create_server(phone=None, *, threaded: bool = False, **settings) -> FastMCP:
 
     @tool()
     def status() -> dict:
-        """Serial/BLE state and last PNG/raw capture timings; no capture performed."""
+        """Serial/BLE state, screen geometry in points and capture timings; no capture performed."""
         return phone.status()
 
     return server

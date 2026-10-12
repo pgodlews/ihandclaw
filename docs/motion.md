@@ -103,7 +103,7 @@ Implemented in `host/src/iphone_hand/motion.py:270-348`:
 
 ### 5.1 Sample Plan Design
 The sample plan satisfies four strict operational constraints:
-1. **Safety and Edge Avoidance:** The iPhone XS screen is $375 \times 812$ pt (`SPEC.md:16`). Hitting display borders clamps displacement and invalidates calibration data (`motion.py:236-248`). All moves remain safely within the interior window $[60..315, 200..610]$ pt.
+1. **Safety and Edge Avoidance:** The iPhone XS screen is $375 \times 812$ pt (`SPEC.md:16`). Hitting display borders clamps displacement and invalidates calibration data (`motion.py:236-248`). All moves remain safely within the interior window $[60..315, 200..610]$ pt. On other screen sizes the centre and the re-centring window ($80$ pt from the sides, $150$ pt from the top, $152$ pt from the bottom) follow the current geometry (SPEC section 9).
 2. **Symmetrical Return Pairs:** Every positive move $(+dx, +dy)$ is immediately paired with its exact opposite $(-dx, -dy)$. This prevents cursor drift and validates directional symmetry.
 3. **2D Velocity Coverage:**
    - Small moves ($16$ counts) measure low-speed behavior ($v < \text{step}$).
@@ -137,6 +137,18 @@ Calibration data is persisted in `~/.config/iphone-hand/calibration.json` (`moti
 }
 ```
 Existing tools reading `step`, `interval`, and `counts_per_pt` continue working unchanged.
+
+### 5.4 Per-Device Profiles
+Gains are stored per screen size (`motion.profile_key`, e.g. `"390x844"`, orientation-independent):
+- The **375 × 812 reference profile** (iPhone XS) keeps the top-level layout above, so the
+  existing cache and every version-2 reader keep working.
+- Other sizes live under `"profiles": {"<w>x<h>": {<same fields>, "screen_pt": [w, h]}}`.
+  Motion switches profile when the detected geometry changes. A size without a profile starts
+  from the estimated default gain (closed loop, `is_calibrated = false`).
+- **Each new phone needs one calibration run on hardware.** Estimated: AssistiveTouch
+  acceleration and the user's tracking-speed setting can differ per model. The XS numbers
+  in 3.2 are measurements of one phone and must not be copied to another. Procedure:
+  CONTRIBUTING, "Add and calibrate a new phone".
 
 ---
 
@@ -194,12 +206,13 @@ Mean Iterations          |               2.02 |               1.00 |            
   - AssistiveTouch red ring diameter $\sim 55 \times 52$ px on Portal ($\sim 31$ pt) (`SPEC.md:23`).
   - UxPlay AirPlay stream $1126 \times 2434$ JPEG at $\sim 49$ fps, scale $3.0027$ px/pt (`SPEC.md:193-194`).
 - **Read (from code and Apple docs):**
-  - iPhone XS screen $375 \times 812$ pt (`SPEC.md:16`).
+  - iPhone XS screen $375 \times 812$ pt (`SPEC.md:16`); other sizes in `geometry.IPHONE_SIZES` (SPEC section 9).
   - Firmware pacing split logic (`SPEC.md:66-67`).
 - **Estimated (to be confirmed on hardware):**
   - Pacing speeds beyond `step=8, interval=15` (e.g. `step=16` or `step=4`).
   - Low-speed deadband / threshold under single counts ($1..3$ counts).
   - Settle delay requirements under daemon $\sim 49$ fps stream.
+  - Any gain on a phone other than the XS: no other phone has been calibrated (5.4).
 
 ### 8.2 Hardware Measurement Plan
 When hardware access (iPhone XS + ESP32-C5 board + Linux daemon) is available, run the following test protocol:

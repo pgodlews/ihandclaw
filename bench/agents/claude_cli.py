@@ -5,19 +5,23 @@ from pathlib import Path
 import subprocess
 import sys
 
+from bench.daemon_client import REFERENCE_PT, DaemonClient
+
 # One fixed executable so the allow-rule matches (a looser command form made Claude Code ask
 # for Bash permission mid-run; measured 2026-10-12).
 PHONE = str(Path(__file__).resolve().with_name("phone"))
 
 
-def command(env):
+def command(env, screen_pt=REFERENCE_PT):
+    """`screen_pt` is the daemon's reported size (GET /api/state screen.pt), not an assumption."""
+    w, h = screen_pt
     prompt = f"""Operate the iPhone using only Bash commands of the exact form `{PHONE} <command> [args]`
 (no cd, pipes, &&, env vars or other programs; nothing else is permitted).
 Commands: state; elements; shot OUT.jpg; tap X Y; tap_el ID; tap_text TEXT [NTH];
 type TEXT; key COMBO; launch APP; back; home; scroll DY. Quote text arguments.
 Output is JSON with ok/error/detail. Check every action result and observe again after errors.
 Typing returns a typed count, not proof of success. Literal \\n in type text becomes newline.
-Coordinates are 375x812 POINTS. shot is pt2, 750x1624 PIXELS: divide pixel coordinates by 2.
+Coordinates are {w}x{h} POINTS. shot is pt2, {2 * w}x{2 * h} PIXELS: divide pixel coordinates by 2.
 Use Read to view shots, saved inside {env['BENCH_RUN_DIR']}.
 While a text field has editing focus taps fail; press key esc first.
 Notes reopens the last note: create a NEW note and verify its unique title.
@@ -47,9 +51,22 @@ def emit_response(raw):
     return bool(data.get("is_error"))
 
 
+def screen_size(env, client=None):
+    """Ask the daemon for the screen size; the reference only when it cannot be read."""
+    try:
+        client = client or DaemonClient(env["IPHONE_HAND_DAEMON_URL"], env.get("IPHONE_HAND_TOKEN"))
+        return client.screen_pt()
+    except Exception as exc:
+        # Raw errors can contain the daemon URL or token; name the class only.
+        print(f"screen size unavailable ({type(exc).__name__}); prompting with "
+              f"{REFERENCE_PT[0]}x{REFERENCE_PT[1]}", file=sys.stderr)
+        return REFERENCE_PT
+
+
 def main():
     # Run inside the run dir so relative screenshots (shot OUT.jpg) stay out of the checkout.
-    proc = subprocess.run(command(os.environ), capture_output=True, text=True, cwd=os.environ["BENCH_RUN_DIR"])
+    proc = subprocess.run(command(os.environ, screen_size(os.environ)), capture_output=True, text=True,
+                          cwd=os.environ["BENCH_RUN_DIR"])
     Path(os.environ["BENCH_RUN_DIR"], "claude_response.json").write_text(proc.stdout)
     sys.stderr.write(proc.stderr)
     try:

@@ -105,7 +105,7 @@ class DatasetBuilder:
             return new_node
 
         # Process each session manifest
-        for sdir_raw in session_dirs:
+        for index, sdir_raw in enumerate(session_dirs):
             sdir = Path(sdir_raw)
             manifest_file = sdir / "manifest.json" if sdir.is_dir() else sdir
             if not manifest_file.exists():
@@ -113,6 +113,12 @@ class DatasetBuilder:
 
             manifest = SessionManifest.load(manifest_file)
             base_path = manifest_file.parent
+            # Coordinates are points of one screen size; never merge two phones' sessions.
+            if index == 0:
+                graph.screen_size_pt = list(manifest.screen_size_pt)
+            elif list(manifest.screen_size_pt) != graph.screen_size_pt:
+                raise ValueError(f"Session {sdir} was recorded at {manifest.screen_size_pt} pt, "
+                                 f"not {graph.screen_size_pt} pt; build separate graphs")
 
             for step in manifest.steps:
                 # Load pre-frame and elements

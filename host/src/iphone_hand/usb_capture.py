@@ -8,6 +8,7 @@ from collections import deque
 import threading
 import time
 
+from . import geometry
 from .airplay import FrameUnavailable
 from .screen import PhoneRect
 
@@ -19,25 +20,15 @@ class UsbCaptureUnavailable(RuntimeError):
 # Measured (over AirPlay, 2026-10-12): iPhone XS frames 1126x2434 for 375x812 pt.
 XS_PX_PER_PT = 1126 / 375  # 3.0027
 
-# Read (Apple HIG, "Points" per device): full-screen iPhone logical widths in points.
-KNOWN_PT_WIDTHS = (320, 360, 375, 390, 393, 402, 414, 428, 430)
-
 
 def _pt_size(size, scale):
-    """Point size for a captured frame: configured per-model scale, else derived.
+    """Point size for a captured frame: configured per-model scale, else geometry.detect.
 
-    Retina scales are integers (@2x/@3x), so try both and keep the one whose point width is a
-    known iPhone width (prefers @3x on ambiguity); fall back to raw @3x. [estimated: Apple has
-    shipped only integer-scale iPhones] Self-consistent either way: PhoneRect carries the derived
-    point size and every px<->pt conversion uses it.
+    Estimated (untested on hardware): USB capture delivers native pixels, so a frame matches
+    one geometry.IPHONE_SIZES row at its integer scale; unknown shapes fall back to @3x.
+    Self-consistent either way: PhoneRect carries the point size for every px<->pt conversion.
     """
-    w, h = size
-    if scale and scale > 0:
-        return round(w / scale), round(h / scale)
-    for s in (3, 2):
-        if round(w / s) in KNOWN_PT_WIDTHS:
-            return round(w / s), round(h / s)
-    return round(w / 3), round(h / 3)
+    return geometry.detect(size, px_per_pt=scale, native=True).pt
 
 
 def list_devices():
@@ -225,6 +216,7 @@ class UsbCaptureScreen:
     Same mirroring rule as AirPlayScreen (airplay.py:114): iOS may pause the stream on a still
     or locked screen, so while the device is connected the newest frame stays valid however old.
     """
+    frames_native = True  # Phone.phone_rect may match exact native pixels (estimated).
 
     def __init__(self, *, backend=None, stale_after=2.0, clock=time.time, pt_scale=0.0):
         self.backend = backend if backend is not None else AVFoundationBackend()

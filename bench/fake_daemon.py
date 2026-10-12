@@ -44,10 +44,22 @@ def _make_element(
     return data
 
 
+REFERENCE_PT = (375, 812)
+
+
 class FakeDaemon:
-    def __init__(self, token: str | None = None, required_token: str | None = None):
+    """Scripted iOS screens. Layouts are written in 375x812 reference points and scaled
+    proportionally to `screen_pt`, a synthetic stand-in for other phones (not a real layout).
+    Native frames are 1126x2434 for the reference (measured XS AirPlay size), else @3x.
+    """
+
+    def __init__(self, token: str | None = None, required_token: str | None = None,
+                 screen_pt: tuple[int, int] = REFERENCE_PT):
         self.token = token
         self.required_token = required_token
+        self.screen_pt = (int(screen_pt[0]), int(screen_pt[1]))
+        self.frame_px = (1126, 2434) if self.screen_pt == REFERENCE_PT else \
+            (3 * self.screen_pt[0], 3 * self.screen_pt[1])
         self.lock = threading.RLock()
         self.current_app: str = "Home"
         self.current_screen: str = "home"
@@ -89,9 +101,25 @@ class FakeDaemon:
                 "low_power_mode": self.low_power_mode,
                 "paused": False,
                 "action_count": len(self.action_log),
+                "screen": {"pt": list(self.screen_pt), "px_per_pt": round(self.frame_px[0] / self.screen_pt[0], 4),
+                           "orientation": "portrait", "source": "config", "ambiguous": False,
+                           "candidates": []},
             }
 
     def get_elements_list(self) -> list[dict[str, Any]]:
+        elements = self._reference_elements()
+        if self.screen_pt == REFERENCE_PT:
+            return elements
+        sx, sy = self.screen_pt[0] / REFERENCE_PT[0], self.screen_pt[1] / REFERENCE_PT[1]
+        scaled = []
+        for el in elements:
+            x1, y1, x2, y2 = el["bounds"]
+            bounds = (round(x1 * sx), round(y1 * sy), round(x2 * sx), round(y2 * sy))
+            extra = {k: v for k, v in el.items() if k not in ("id", "text", "type", "bounds", "center", "size")}
+            scaled.append(_make_element(el["id"], el["text"], el["type"], bounds=bounds, **extra))
+        return scaled
+
+    def _reference_elements(self) -> list[dict[str, Any]]:
         with self.lock:
             screen = self.current_screen
 
@@ -234,8 +262,9 @@ class FakeDaemon:
 
     def get_frame_image(self, scale: str | None = None) -> Image.Image:
         with self.lock:
-            # 750 x 1624 or 1126 x 2434
-            size = (750, 1624) if scale == "pt2" else (1126, 2434)
+            # pt2 (2 px per pt, 750 x 1624 for the reference) or native (1126 x 2434)
+            w, h = self.screen_pt
+            size = (2 * w, 2 * h) if scale == "pt2" else self.frame_px
             # Background color reflects dark mode:
             bg_color = (25, 25, 28) if self.dark_mode else (245, 245, 247)
             text_color = (240, 240, 240) if self.dark_mode else (20, 20, 20)
@@ -244,7 +273,7 @@ class FakeDaemon:
             draw = ImageDraw.Draw(img)
 
             # Draw top notch / status bar area
-            scale_fac = size[0] / 375.0
+            scale_fac = size[0] / w
             draw.text((int(20 * scale_fac), int(20 * scale_fac)), f"App: {self.current_app}", fill=text_color)
             draw.text((int(20 * scale_fac), int(50 * scale_fac)), f"Screen: {self.current_screen}", fill=text_color)
 
@@ -506,8 +535,9 @@ class _FakeDaemonHandler(BaseHTTPRequestHandler):
 class FakeDaemonServer:
     """Threaded HTTP server hosting FakeDaemon on localhost."""
 
-    def __init__(self, port: int = 0, required_token: str | None = None):
-        self.daemon = FakeDaemon(required_token=required_token)
+    def __init__(self, port: int = 0, required_token: str | None = None,
+                 screen_pt: tuple[int, int] = REFERENCE_PT):
+        self.daemon = FakeDaemon(required_token=required_token, screen_pt=screen_pt)
 
         class HandlerWithDaemon(_FakeDaemonHandler):
             daemon_instance = self.daemon

@@ -76,7 +76,7 @@ and start Screen Mirroring yourself; and each action takes seconds, not millisec
 |---|---|
 | BLE board | ESP32-C3, including cheap “super mini” class boards, or ESP32-C5; USB-Serial/JTAG and the reference 4 MB flash layout. Measured (owner): C3 boots and answers `PING chip=esp32c3`; this does not establish sustained BLE/Wi-Fi/OTA reliability. |
 | Board connection | Data-capable USB cable for installation and serial control; Wi-Fi TCP is optional after private provisioning. Read: C3 is 2.4 GHz; C5 also supports 5 GHz. |
-| Phone | Reference: iPhone XS, iOS 18. Read: other sizes/versions need validation; 375 × 812 point assumptions remain in the contract and adapters. |
+| Phone | Reference: iPhone XS, iOS 18 (375 × 812 pt). Read: other iPhone sizes are implemented and tested offline only (synthetic frames, fake devices), untested on hardware; the daemon reports the size in `/api/state` and over AirPlay needs `screen_pt` in daemon.toml for Face ID iPhones other than 375 × 812. Each new phone needs one calibration run: [add a phone](CONTRIBUTING.md#add-and-calibrate-a-new-phone). |
 | Host | Linux for headless AirPlay, or a logged-in macOS session. Python ≥3.11, uv, and ESP-IDF 6.2 (currently `master`; no release yet) for firmware builds. |
 | Screen receiver | UxPlay + GStreamer and the same trusted LAN as the phone; no Portal is required for this path. USB capture instead needs macOS and a phone cable. |
 | Agent | Claude through MCP/Claude Code, or droidclaw's iPhone backend with LM Studio. Accounts, model weights and compute are supplied by you. |

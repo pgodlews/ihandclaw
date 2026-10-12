@@ -7,11 +7,12 @@ from pathlib import Path
 import tomllib
 from urllib.parse import urlsplit
 
-from . import platforms
+from . import geometry, platforms
 from .airplay import AirPlayScreen, ExternalUxPlayReceiver, UxPlaySupervisor
 from .elements import Elements
 from .phone import Phone
 from .motion import validate_recover_key
+from .pointer import get_detector
 from .serial_link import SerialLink
 
 
@@ -32,6 +33,11 @@ class Config:
     frames_dir: str | None = None
     frame_source: str = 'airplay'
     usb_pt_scale: float = 0.0  # px/pt for USB capture; 0 = derive from the frame
+    # Screen geometry: None detects it from frames; [w, h] portrait points overrides it
+    # (needed over AirPlay for Face ID iPhones other than 375x812, see geometry.detect).
+    screen_pt: list[int] | None = None
+    device: str = 'iphone'  # size table: iphone, or ipad (groundwork, untested)
+    pointer_detector: str = 'assistivetouch'  # or ipados (prototype, untested)
 
     def __post_init__(self):
         validate_recover_key(self.pointer_recover_key)
@@ -62,6 +68,9 @@ class Config:
         if isinstance(self.usb_pt_scale, bool) or not isinstance(self.usb_pt_scale, (int, float)) \
                 or not math.isfinite(self.usb_pt_scale) or not 0 <= self.usb_pt_scale <= 10:
             raise ValueError('usb_pt_scale must be a finite number in 0..10')
+        geometry.parse_screen_pt(self.screen_pt)
+        geometry.sizes(self.device)
+        get_detector(self.pointer_detector)
 
     @classmethod
     def load(cls, path=None):
@@ -114,8 +123,11 @@ def create_app(config, *, phone=None, screen=None, elements=None, supervisor=Non
             screen = AirPlayScreen(frames, connected=observer.client_connected)
     phone = phone if phone is not None else Phone(make_link(config.link, config.link_token), screen,
                                                  home_action=config.home_action,
-                                                 pointer_recover_key=config.pointer_recover_key)
-    elements = elements if elements is not None else Elements(tap_offset=(config.vc_offset_x, config.vc_offset_y))
+                                                 pointer_recover_key=config.pointer_recover_key,
+                                                 screen_pt=config.screen_pt, device=config.device,
+                                                 pointer_detector=config.pointer_detector)
+    elements = elements if elements is not None else Elements(tap_offset=(config.vc_offset_x, config.vc_offset_y),
+                                                              pointer_detector=config.pointer_detector)
     return http_app(config, phone, screen, elements, supervisor, receiver)
 
 

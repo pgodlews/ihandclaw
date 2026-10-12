@@ -20,6 +20,20 @@ Labels: **measured** = observed on our iPhone XS (iOS 18.7.10); **read** = from 
 | Known issues | Phone sends no frames while the screen is still (measured, handled); receiver must not be restarted mid-session or the phone has to re-select it (measured) | Locking the phone freezes the stream with no signal (read); camera permission for a background `python` may be silently denied without a signed app wrapper (estimated) | Requires sudo for the tunnel; Developer Mode warning on the phone |
 | Status | **Production** on our Linux host | Implemented, **not yet tested on hardware** (`scripts/usb_capture_probe.py`) | Prototype (docs/devservices.md) |
 
+## Screen size per source
+
+The point size of the phone (SPEC section 9) comes from the frame. How much a frame reveals
+depends on the source:
+
+- **AirPlay:** estimated: the phone scales its screen into the receiver's requested size
+  (UxPlay `-s 1125x2436`), so only the aspect ratio is left. Face ID iPhones cannot be told
+  apart that way; `/api/state` reports `screen.ambiguous` and keeps 375 × 812. Set
+  `screen_pt` in daemon.toml for any other phone.
+- **USB capture:** estimated (untested): frames are native pixels, so the size is matched
+  exactly against the device table (e.g. 1170 × 2532 → 390 × 844). `usb_pt_scale` still
+  overrides.
+- **Portal (ADB):** the mirrored phone is a letterboxed column band; aspect only, as AirPlay.
+
 ## Which one to use
 
 - **Headless box (recommended):** Linux + AirPlay. Nothing to install on the phone, no

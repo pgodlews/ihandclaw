@@ -13,6 +13,9 @@ import urllib.parse
 import urllib.request
 from PIL import Image
 
+# SPEC reference screen (iPhone XS). Daemons report the actual size in GET /api/state.
+REFERENCE_PT = (375, 812)
+
 
 class DaemonError(RuntimeError):
     """Raised when daemon responds with an HTTP error or unreachable."""
@@ -66,6 +69,18 @@ class DaemonClient:
 
     def get_state(self) -> dict[str, Any]:
         return self._request("GET", "/api/state")
+
+    def screen_pt(self) -> tuple[int, int]:
+        """Screen size in points from /api/state ("screen": {"pt": [w, h]}).
+
+        A daemon without the field (older daemons, other simulators) is the 375x812 reference.
+        """
+        state = self.get_state()
+        pt = (state.get("screen") or {}).get("pt") if isinstance(state, dict) else None
+        if (isinstance(pt, (list, tuple)) and len(pt) == 2 and
+                all(type(v) is int and v > 0 for v in pt)):
+            return int(pt[0]), int(pt[1])
+        return REFERENCE_PT
 
     def get_elements(self, annotate: bool = False) -> list[dict[str, Any]]:
         query = "?annotate=1" if annotate else ""

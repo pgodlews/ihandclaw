@@ -7,9 +7,9 @@ from pathlib import Path
 
 from PIL import Image
 
-from . import keys, pointer
+from . import geometry, keys, pointer
 from .motion import Motion, MotionError, validate_target
-from .screen import Screen, find_phone_rect, phone_crop
+from .screen import PhoneRect, Screen, find_phone_rect, phone_crop
 from .serial_link import PipelineError, SerialLink
 
 
@@ -45,21 +45,57 @@ class Phone:
     def __init__(self, link: SerialLink | None = None, screen: Screen | None = None, *,
                  settle: float = 0.350, calibration_path: Path | None = None,
                  persist_calibration: bool = True, home_action: str = "cmd+h", sleeper=time.sleep,
-                 pointer_recover_key: str = ""):
+                 pointer_recover_key: str = "", screen_pt=None, device: str = "iphone",
+                 pointer_detector: str = "assistivetouch"):
         self.link = link if link is not None else SerialLink()
         self.screen = screen if screen is not None else Screen()
         self._lock = threading.RLock()
         self._last_pointer = None
         self.home_action = home_action
+        # Geometry inputs: override, family table, detector. The detected PhoneRect of the latest
+        # frame is the single source of truth for the point size (exposed in /api/state).
+        self.screen_pt = geometry.parse_screen_pt(screen_pt)
+        geometry.sizes(device)
+        self.device = device
+        self.pointer_detector = pointer.get_detector(pointer_detector)
+        self.rect: PhoneRect | None = None
         self.motion = Motion(self.link, self.find_pointer, settle=settle,
                              calibration_path=calibration_path, persist=persist_calibration,
-                             sleeper=sleeper, pointer_recover_key=pointer_recover_key)
+                             sleeper=sleeper, pointer_recover_key=pointer_recover_key,
+                             bounds=self.bounds, discover=self.discover_geometry)
+
+    def phone_rect(self, frame: Image.Image) -> PhoneRect:
+        """Screen rectangle and point size of one frame; also remembered as the current one."""
+        rect = find_phone_rect(frame, screen_pt=self.screen_pt,
+                               px_per_pt=getattr(self.screen, "pt_scale", 0) or 0,
+                               native=getattr(self.screen, "frames_native", False),
+                               family=self.device)
+        self.rect = rect
+        return rect
+
+    def geometry(self) -> geometry.Geometry:
+        return self.rect.geometry if self.rect else geometry.default_geometry(self.screen_pt)
+
+    def bounds(self) -> tuple[int, int]:
+        """Screen size in points of the latest frame (before any frame: override or reference)."""
+        return self.geometry().pt
+
+    @synchronized
+    def discover_geometry(self) -> None:
+        """Look at one frame when no frame decided the screen size yet (no device commands)."""
+        if self.rect is None:
+            self.find_pointer()
+
+    def check_target(self, x: float, y: float) -> None:
+        if not self.geometry().contains(x, y):
+            self.discover_geometry()  # A larger phone's target, before its first frame.
+        validate_target(x, y, self.bounds())
 
     @synchronized
     def screenshot(self) -> Image.Image:
         frame = self.screen.grab()
-        rect = find_phone_rect(frame)
-        self._last_pointer = pointer.find_pointer(frame, rect)
+        rect = self.phone_rect(frame)
+        self._last_pointer = pointer.find_pointer(frame, rect, self.pointer_detector)
         return phone_crop(frame, rect)
 
     @synchronized
@@ -71,7 +107,7 @@ class Phone:
     @synchronized
     def find_pointer(self) -> tuple[float, float, float] | None:
         frame = self.screen.grab()
-        self._last_pointer = pointer.find_pointer(frame, find_phone_rect(frame))
+        self._last_pointer = pointer.find_pointer(frame, self.phone_rect(frame), self.pointer_detector)
         return self._last_pointer
 
     @synchronized
@@ -102,8 +138,8 @@ class Phone:
 
     @synchronized
     def drag(self, x1: float, y1: float, x2: float, y2: float, steps: int = 10) -> dict:
-        validate_target(x1, y1)
-        validate_target(x2, y2)
+        self.check_target(x1, y1)
+        self.check_target(x2, y2)
         integer(steps, "steps", 1, 1000)
         result = self._require_position(x1, y1)
         recovered_with = result.get("recovered_with")
@@ -167,7 +203,9 @@ class Phone:
                 "ble": {"conn": result.get("conn") == "1", "ready": result.get("ready") == "1",
                         "bonded": int(result.get("bonded", 0)), "peer": result.get("peer")},
                 "adb": self.screen.status(), "last_grab_ms": self.screen.last_grab_ms,
+                "screen": self.geometry().to_dict(),
                 "events": list(self.link.events), "calibration": {
+                    "profile": self.motion.profile,
                     "counts_per_pt": list(self.motion.counts_per_pt), "step": self.motion.step,
                     "interval": self.motion.interval, "cache_error": self.motion.cache_error}}
 

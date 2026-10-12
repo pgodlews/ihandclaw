@@ -21,9 +21,17 @@ def connection_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--port", help="serial port (or IPHONE_HAND_PORT)")
     parser.add_argument("--adb-serial", help="ADB device selector (or IPHONE_HAND_ADB_SERIAL)")
     parser.add_argument("--capture", choices=["png", "raw"], default="png")
+    parser.add_argument("--frames-dir", help="read AirPlay frames from this UxPlay frames directory "
+                        "(the daemon's frames_dir) instead of ADB; stop the daemon first: one board client")
     parser.add_argument("--settle", type=float, default=0.350)
     parser.add_argument("--home-action", default="cmd+h", help="key combo or button3")
     parser.add_argument("--no-cache", action="store_true", help="do not load/save calibration")
+    parser.add_argument("--screen-pt", type=int, nargs=2, metavar=("W", "H"),
+                        help="screen size in points (default: detect; reference 375 812)")
+    parser.add_argument("--device", choices=["iphone", "ipad"], default="iphone",
+                        help="size table for detection (ipad: untested groundwork)")
+    parser.add_argument("--pointer-detector", choices=["assistivetouch", "ipados"],
+                        default="assistivetouch", help="ipados: untested prototype")
 
 
 def make_phone(args):
@@ -32,11 +40,20 @@ def make_phone(args):
     if args.fake:
         if args.fixture:
             with Image.open(args.fixture) as image:
-                return FakePhone(image)
-        return FakePhone()
-    return Phone(SerialLink(args.port), Screen(args.adb_serial, mode=args.capture),
+                return FakePhone(image, screen_pt=args.screen_pt)
+        return FakePhone(screen_pt=args.screen_pt)
+    if args.frames_dir:
+        from . import platforms
+        from .airplay import AirPlayScreen, ExternalUxPlayReceiver
+        receiver = ExternalUxPlayReceiver(**platforms.receiver_observers())
+        screen = AirPlayScreen(platforms.resolve_frames_dir(args.frames_dir),
+                               connected=receiver.client_connected)
+    else:
+        screen = Screen(args.adb_serial, mode=args.capture)
+    return Phone(SerialLink(args.port), screen,
                  settle=args.settle, persist_calibration=not args.no_cache,
-                 home_action=args.home_action)
+                 home_action=args.home_action, screen_pt=args.screen_pt, device=args.device,
+                 pointer_detector=args.pointer_detector)
 
 
 async def run_dev(args):
@@ -112,8 +129,9 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         phone = make_phone(args)
         if args.command == "shot":
-            phone.screenshot().save(args.output, format="PNG")
-            result = {"saved": args.output, "size": [750, 1624]}
+            image = phone.screenshot()
+            image.save(args.output, format="PNG")
+            result = {"saved": args.output, "size": list(image.size)}
         elif args.command == "pointer":
             position = phone.find_pointer()
             result = dict(zip(("x", "y", "confidence"), position)) if position is not None else None
