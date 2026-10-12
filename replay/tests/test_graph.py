@@ -13,6 +13,24 @@ def test_normalize_combo():
     assert normalize_combo("cmd+space") == "cmd+space"
     assert normalize_combo("Enter") == "enter"
     assert normalize_combo("CMD+H") == "cmd+h"
+    # Every spelling iphone_hand.keys accepts for one key matches the same recording.
+    assert normalize_combo("Command+Space") == normalize_combo("gui+space") == "cmd+space"
+    assert normalize_combo("control+option+escape") == "alt+ctrl+esc"
+    assert normalize_combo("return") == "enter"
+
+
+def test_empty_tap_text_never_matches():
+    node = ScreenNode(screen_id="s1", frame_path="s1.jpg",
+                      elements=[{"id": "t0", "text": "Settings", "bounds_pt": [0, 0, 10, 10]}])
+    target = ScreenNode(screen_id="s2", frame_path="s2.jpg")
+    graph = ScreenGraph()
+    graph.add_node(node)
+    graph.add_node(target)
+    graph.add_transition(Transition("t", "s1", "s2", "tap_text", {"text": "Settings"},
+                                    target_element=node.elements[0]))
+    assert node.find_element_by_text("  ") is None
+    assert graph.match_action("s1", "tap_text", {"text": ""}) is None
+    assert graph.match_action("s1", "tap_text", {"text": "sett"})[0] is target
 
 
 def test_screen_node_element_queries():

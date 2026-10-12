@@ -21,11 +21,13 @@ from typing import Any
 
 import httpx
 from starlette.applications import Starlette
+from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response, StreamingResponse
 from starlette.routing import Route
 
 from .manifest import REFERENCE_PT, ActionRecord, SessionManifest, StepRecord
+from .server import TokenAuthMiddleware
 
 
 class SessionRecorder:
@@ -200,7 +202,10 @@ class SessionRecorder:
             Route("/api/state", proxy_get, methods=["GET"]),
             Route("/api/{action}", proxy_action, methods=["POST"]),
         ]
-        return Starlette(routes=routes)
+        # The proxy attaches the daemon token itself, so it must demand that token and refuse
+        # cross-origin requests like the daemon does; otherwise any local process or web page
+        # could drive the phone through it.
+        return Starlette(routes=routes, middleware=[Middleware(TokenAuthMiddleware, token=self.token)])
 
 
 def main():

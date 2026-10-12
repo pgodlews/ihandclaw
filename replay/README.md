@@ -131,6 +131,7 @@ uv run python -m replay.recorder \
 ```
 
 All `GET` requests pass through; every `POST /api/{action}` is intercepted and recorded into the dataset folder with pre/post frames.
+The proxy requires the same daemon token as the daemon (`Authorization: Bearer` or `?token=`) and refuses cross-origin requests, so keep sending the token from your agent.
 
 ---
 

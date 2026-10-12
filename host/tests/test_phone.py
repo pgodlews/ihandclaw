@@ -80,6 +80,16 @@ def test_validate_before_any_action(rig):
     assert not device.commands
 
 
+def test_scroll_outside_firmware_range_is_rejected_before_positioning(rig):
+    phone, device, _ = rig
+    for dy, dx in [(2001, 0), (0, -2001), (32767, 0)]:
+        with pytest.raises(ValueError):
+            phone.scroll(dy, dx, 100, 200)
+    assert not device.commands
+    phone.scroll(-2000, 2000)
+    assert device.commands[-1][1:] == ("SCROLL", ("-2000", "2000"))
+
+
 def test_constructor_is_lazy_and_status_does_not_grab(rig):
     phone = Phone(persist_calibration=False)
     assert phone.link.transport is None

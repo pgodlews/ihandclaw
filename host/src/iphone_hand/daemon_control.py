@@ -8,6 +8,7 @@ import time
 from .airplay import FrameUnavailable
 from .elements import password_prompt
 from .geometry import default_geometry
+from .keys import text_keys
 from .phone import integer
 from .link_errors import link_error_class
 from .pointer import find_pointer
@@ -189,6 +190,7 @@ class Controller:
             name = args.get(field)
             if set(args) != {field} or not isinstance(name, str) or not name.strip() or len(name) > 200:
                 raise ValueError('app/shortcut must be a nonempty name of at most 200 characters')
+            text_keys(name)  # Reject untypeable names before Spotlight is opened.
             self.phone.key('cmd+space')
             self.paused.wait(.35)
             self.check()

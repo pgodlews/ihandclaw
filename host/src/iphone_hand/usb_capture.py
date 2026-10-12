@@ -31,6 +31,19 @@ def _pt_size(size, scale):
     return geometry.detect(size, px_per_pt=scale, native=True).pt
 
 
+def rgba_image(data, width, height, bytes_per_row):
+    """RGB image from 8-bit RGBA rows that may be padded beyond width * 4 bytes.
+
+    Read (Apple CGImageGetBytesPerRow): CoreGraphics may align rows, so the row stride must
+    come from the image, not from its width; ignoring it skews every row after the first.
+    """
+    from PIL import Image
+    if bytes_per_row < width * 4 or len(data) < bytes_per_row * height:
+        raise ValueError('captured frame buffer is smaller than its reported geometry')
+    return Image.frombuffer('RGBA', (width, height), data, 'raw', 'RGBA',
+                            bytes_per_row, 1).convert('RGB')
+
+
 def list_devices():
     """Human-readable muxed capture devices (name + modelID only; never unique IDs)."""
     AVFoundation, _, _, _ = _frameworks()
@@ -165,15 +178,17 @@ class AVFoundationBackend:
         if buffer is None:
             return None
         ci = CoreImage.CIImage.imageWithCVPixelBuffer_(buffer)
-        context = CoreImage.CIContext.context()
-        cg = context.createCGImage_fromRect_(ci, ci.extent())
+        # A CIContext is expensive to create; one per backend, not one per frame.
+        if getattr(self, '_ci_context', None) is None:
+            self._ci_context = CoreImage.CIContext.context()
+        cg = self._ci_context.createCGImage_fromRect_(ci, ci.extent())
         if cg is None:
             return None
-        width, height = self._quartz.CGImageGetWidth(cg), self._quartz.CGImageGetHeight(cg)
-        data = self._quartz.CGDataProviderCopyData(self._quartz.CGImageGetDataProvider(cg))
-        from PIL import Image
+        quartz = self._quartz
+        data = quartz.CGDataProviderCopyData(quartz.CGImageGetDataProvider(cg))
         # Estimated (unverified on target): CIContext renders RGBA premultiplied here.
-        return Image.frombytes('RGBA', (width, height), bytes(data)).convert('RGB')
+        return rgba_image(bytes(data), quartz.CGImageGetWidth(cg), quartz.CGImageGetHeight(cg),
+                          quartz.CGImageGetBytesPerRow(cg))
 
     def _stop_session(self):
         if self._session is not None:

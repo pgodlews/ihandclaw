@@ -20,6 +20,7 @@ from . import keys
 
 
 HOME_OFFSET = (120, 200)  # counts from the corner to a visible spot (~90, ~150 pt)
+MAX_OBSERVATIONS = 1000  # newest unclamped moves kept for ParametricGainModel.fit
 
 
 class MotionError(RuntimeError):
@@ -395,6 +396,8 @@ class Motion:
             dy_pt = after[1] - before[1]
             if abs(dx_pt) > 0.5 or abs(dy_pt) > 0.5:
                 self.observations.append((counts[0], counts[1], dx_pt, dy_pt, step, interval))
+                # Every move_to records one; a long-running daemon must not grow without bound.
+                del self.observations[:-MAX_OBSERVATIONS]
 
     def _reveal_and_home(self) -> tuple[float, float] | None:
         position = self._position()
@@ -448,6 +451,7 @@ class Motion:
         inside = (max(12, min(width - 12, x)), max(12, min(height - 12, y)))
         staging = inside != target and math.dist(position, target) > 20
         iterations = 0
+        fast = False  # Whether the board is currently at the adaptive fast pacing.
 
         for iteration in range(1, 7):
             if math.dist(position, target) <= 3:
@@ -464,8 +468,11 @@ class Motion:
                 current_step = min(32, eff_step * 2)
                 current_interval = max(10, eff_interval - 5)
                 self.link.command("CFG", f"step={current_step}", f"interval={current_interval}")
-            elif adaptive and iteration > 1 and (current_step != eff_step or current_interval != eff_interval):
+                fast = True
+            elif fast:
+                # Fine corrections run (and are learned) at the standard pacing again.
                 self.link.command("CFG", f"step={eff_step}", f"interval={eff_interval}")
+                fast = False
 
             if self.model.is_calibrated:
                 counts = list(self.model.solve_counts(delta[0], delta[1], step=current_step, interval=current_interval))
@@ -505,17 +512,17 @@ class Motion:
         the XS window [80..295, 150..660] scaled to the current size).
         """
         self.link.command("CFG", f"step={self.step}", f"interval={self.interval}")
-        pos = self._position()
         width, height = self._ensure_profile()
         centre = (width / 2, height / 2)
-        if pos is None:
+
+        def recentre():
             self.move_to(*centre)
-            pos = self._position()
-            if pos is None:
+            position = self._position()
+            if position is None:
                 raise MotionError("Pointer unavailable for calibration")
-        else:
-            self.move_to(*centre)
-            pos = self._position()
+            return position
+
+        pos = recentre()
 
         # Calibration sample plan: sizes, directions, and balanced return moves
         # designed to fit well within a ~60s budget and stay strictly away from edges.
@@ -540,8 +547,7 @@ class Motion:
         for dx, dy in plan:
             # Re-center if pointer drifted too close to bounds
             if pos[0] < 80 or pos[0] > width - 80 or pos[1] < 150 or pos[1] > height - 152:
-                self.move_to(*centre)
-                pos = self._position()
+                pos = recentre()
 
             after = self._move(dx, dy)
             if after is None:

@@ -81,8 +81,8 @@ def create_server(phone=None, *, threaded: bool = False, **settings) -> FastMCP:
         return phone.drag(x1, y1, x2, y2, steps)
 
     @tool()
-    def scroll(dy: int, dx: int = 0, x: float | None = None, y: float | None = None) -> None:
-        """Scroll wheel units, optionally first positioning at (x,y)."""
+    def scroll(dy: int, dx: int = 0, x: float | None = None, y: float | None = None) -> dict | None:
+        """Scroll wheel units, optionally first positioning at (x,y); returns pointer recovery metadata if any."""
         return phone.scroll(dy, dx, x, y)
 
     @tool()

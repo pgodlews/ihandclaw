@@ -17,13 +17,20 @@ from typing import Any
 from .manifest import REFERENCE_PT, UIElement, is_point_in_bounds, parse_bounds
 
 
+# Spellings the host accepts for one key (iphone_hand.keys), mapped to one canonical name.
+_COMBO_ALIASES = {"command": "cmd", "gui": "cmd", "control": "ctrl", "option": "alt", "opt": "alt",
+                  "return": "enter", "escape": "esc"}
+_MODIFIERS = {"cmd", "ctrl", "alt", "shift", "fn", "rcmd", "rctrl", "ralt", "rshift"}
+
+
 def normalize_combo(combo: str) -> str:
-    """Normalize keyboard shortcut combo (e.g. 'Shift+Cmd+Space' -> 'cmd+shift+space')."""
+    """Normalize keyboard shortcut combo (e.g. 'Shift+Command+Space' -> 'cmd+shift+space')."""
     if not combo:
         return ""
     parts = [p.strip().lower() for p in combo.split("+") if p.strip()]
-    modifiers = sorted([p for p in parts if p in {"cmd", "ctrl", "alt", "opt", "shift", "fn"}])
-    keys = [p for p in parts if p not in {"cmd", "ctrl", "alt", "opt", "shift", "fn"}]
+    parts = [_COMBO_ALIASES.get(p, p) for p in parts]
+    modifiers = sorted(set(p for p in parts if p in _MODIFIERS))
+    keys = [p for p in parts if p not in _MODIFIERS]
     return "+".join(modifiers + keys)
 
 
@@ -109,6 +116,8 @@ class ScreenNode:
     def find_element_by_text(self, text: str, nth: int = 0) -> dict[str, Any] | None:
         """Find an element matching text."""
         norm = normalize_text(text)
+        if not norm:
+            return None
         matches = []
         for elem in self.elements:
             elem_text = normalize_text(elem.get("text", ""))
@@ -248,6 +257,8 @@ class ScreenGraph:
         # 3. Tap text (text, nth)
         if action_name == "tap_text":
             text = normalize_text(str(args.get("text", "")))
+            if not text:
+                return None  # "" is a substring of every label; the daemon rejects it too.
             if trans.action_name == "tap_text":
                 rec_text = normalize_text(str(trans.action_args.get("text", "")))
                 if text == rec_text or text in rec_text:
