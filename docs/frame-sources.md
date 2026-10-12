@@ -36,6 +36,20 @@ depends on the source:
 
 ## Which one to use
 
+```mermaid
+flowchart TD
+    start(["Choose a frame source"]) --> headless{"Headless Linux box,<br/>or no cable wanted?"}
+    headless -- yes --> airplay["AirPlay mirror (UxPlay)<br/>frame_source = airplay<br/><i>Production</i>"]
+    headless -- no --> desk{"Mac on the desk, phone on a cable,<br/>Mac stays logged in?"}
+    desk -- yes --> usb["USB capture (macOS)<br/>frame_source = usb<br/><i>Not yet tested on hardware</i>"]
+    desk -- no --> airplay
+    airplay --> tree{"Need the accessibility tree?"}
+    usb --> tree
+    tree -- yes --> devsvc["Add developer services<br/>(Developer Mode on the phone)"]
+    tree -- no --> done(["Done"])
+    devsvc --> done
+```
+
 - **Headless box (recommended):** Linux + AirPlay. Nothing to install on the phone, no
   Developer Mode, no cable, no desktop session. The only manual step is starting Screen
   Mirroring on the phone after it reboots or the receiver restarts.

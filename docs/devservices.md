@@ -113,6 +113,28 @@ inside its async body and can open multiple transports; the async listing offloa
 and avoids that path. See [`tunneld/api.py:191`][tunneld-api] and
 [`tunneld/api.py:211`][tunneld-list]. Only the default local tunneld is supported here.
 
+Read (implementation): the `launch_app` example above, as a sequence:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Daemon as Caller (daemon)
+    participant DS as DevServices
+    participant Tunneld as tunneld (local, root)
+    participant Phone as iPhone (Developer Mode)
+    Daemon->>DS: async with DevServices()
+    DS->>Tunneld: get_tunneld_tunnels() (async listing)
+    Tunneld-->>DS: tunnel list
+    DS->>Phone: connect one RemoteServiceDiscoveryService
+    DS->>Phone: auto-mount developer image (default context)
+    Daemon->>DS: resolve_bundle(name)
+    DS-->>Daemon: bundle id
+    Daemon->>DS: launch(bundle), kill_existing=False
+    DS->>Phone: launch request (60 s default timeout)
+    DS-->>Daemon: launch result
+    Note over DS,Phone: a timeout or transport loss invalidates the session,<br/>reconnect explicitly before the next call
+```
+
 ## Geometry and AX/DTX research
 
 Read (source): AX uses the `com.apple.accessibility.axAuditDaemon.remoteserver` service

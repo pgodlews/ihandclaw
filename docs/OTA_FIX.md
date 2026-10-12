@@ -89,6 +89,44 @@ exit 0, never asserted rollback; callers must inspect confirmed. Proven rollback
 target identity mismatch and rejected upload return nonzero. Rollback/identity
 errors include final JSON. Full wire and usage details are in firmware/README.md.
 
+The upload and trial as the CLI drives them (read, `host/src/iphone_hand/ota.py` and
+`firmware/main/ota.c`; timings from the notes above):
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CLI as Host CLI
+    participant FW as Board firmware
+    participant BL as Bootloader
+    CLI->>FW: STATUS, PING (preflight: fw, slot, identity)
+    CLI->>FW: BEGIN (size, SHA-256, binary negotiates 8192-byte chunks)
+    loop each window of 4 binary frames
+        CLI->>FW: frames (length, absolute offset, ACK id, raw payload)
+        FW-->>CLI: cumulative ACK
+    end
+    CLI->>FW: END
+    FW-->>CLI: END ACK (size, hash, descriptor, set-boot checked)
+    Note over FW: restart about 1 s after the slot is selected
+    FW->>BL: reboot
+    BL->>FW: boot target slot, state PENDING_VERIFY
+    CLI->>FW: PING (target slot and full descriptor hash)
+    CLI->>FW: STATUS (health checkpoint, then mark valid)
+    FW-->>CLI: ota_last=confirmed
+```
+
+Read: the trial's slot state moves only through the transitions below. A slot that is
+never confirmed is rolled back by the bootloader on the next boot.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Valid: running slot
+    Valid --> New: set-boot selects the other slot
+    New --> PendingVerify: reboot into the new slot
+    PendingVerify --> Valid: health checkpoint ok, mark valid
+    PendingVerify --> Aborted: 120 s trial timer fires, or reset before confirm
+    Aborted --> Valid: bootloader rolls back to the previous slot
+```
+
 ## Speed and limits
 
 Estimated: the reported 1,355,440 B image needs 166 binary frames and 42 ACK

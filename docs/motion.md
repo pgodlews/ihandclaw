@@ -160,6 +160,22 @@ In `host/src/iphone_hand/motion.py:250-318`:
   - If `adaptive=True`, long moves ($>100$ pt) execute iteration 1 at fast pacing (`step=16, interval=10`), automatically reverting to standard pacing for fine corrections.
   - Closed-loop feedback (up to 6 iterations) is retained: if a move lands $\le 3$ pt on iteration 1, it completes in **1 iteration**. If sub-pixel noise causes error $> 3$ pt, a corrective second move finishes the landing.
 
+```mermaid
+flowchart TD
+    call(["move_to(x, y, adaptive)"]) --> long{"adaptive and<br/>distance > 100 pt?"}
+    long -- yes --> fast["Iteration 1: CFG step=16 interval=10"]
+    long -- no --> base["Iteration 1: base pacing<br/>(step=8, interval=15 by default)"]
+    fast --> solve["solve_counts(remaining displacement)"]
+    base --> solve
+    solve --> send["MOVE dx dy<br/>(firmware paces reports)"]
+    send --> measure["Locate pointer in frame"]
+    measure --> ok{"Error <= 3 pt?"}
+    ok -- yes --> landed(["Landed<br/>(1 iteration if first try)"])
+    ok -- no --> count{"Fewer than 6 iterations?"}
+    count -- yes --> solve
+    count -- no --> stop(["Stop after 6 iterations"])
+```
+
 ---
 
 ## 7. Simulator Upgrades and Verified Test Results

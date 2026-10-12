@@ -6,6 +6,29 @@ A separate matrix compiles `esp32c3` and `esp32c5` and runs the IDF report-map
 check. It never flashes, pairs or accesses a phone. No secrets are required;
 checkout credentials are not retained and repository access is read-only.
 
+```mermaid
+flowchart LR
+    trigger(["push, pull_request,<br/>workflow_dispatch"]) --> offline
+    trigger --> firmware
+
+    subgraph offline["offline-tests (ubuntu-24.04, 15 min)"]
+        direction TB
+        o1["Host tests"] --> o2["Benchmark and submission tests"]
+        o2 --> o3["Catalog and playbook tests"]
+        o3 --> o4["make -C firmware/test<br/>and sanitize (ASan/UBSan)"]
+        o4 --> o5["Validate result submissions"]
+    end
+
+    subgraph firmware["firmware matrix (ubuntu-24.04, 25 min)"]
+        direction TB
+        c3["esp32c3: idf.py build<br/>+ check-map"]
+        c5["esp32c5: idf.py build<br/>+ check-map"]
+    end
+```
+
+Read: no job flashes, pairs or talks to a phone or board. The firmware jobs run in
+`espressif/idf` containers and only build the images and run the map check.
+
 Read: Python is pinned to 3.12.10, uv to 0.9.2, checkout to v7.0.1's commit,
 and setup-python to v7.0.0's commit. ESP-IDF 6.2 has no release yet: "6.2" in
 this repo means ESP-IDF master, which reports 6.2.0 in `esp_idf_version.h`
