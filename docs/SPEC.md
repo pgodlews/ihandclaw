@@ -13,7 +13,7 @@ agent ⇄ MCP server (Mac, host/) ──USB serial──> ESP32-C5 (firmware/) �
 | Fact | Value | Source |
 |---|---|---|
 | Phone | iPhone XS, iOS 18, Lightning (no USB-C) | owner |
-| Phone screen | 375 × 812 pt | Apple spec (read) |
+| Phone screen | 375 × 812 pt (the reference size; other sizes: section 9) | Apple spec (read) |
 | Board | ESP32-C5HF4 rev v1.0, BT 5 LE only, 4 MB flash, **USB-Serial/JTAG only (no USB-OTG, no USB HID)** | esptool chip-id (measured) |
 | Additional board | ESP32-C3 (QFN32) rev v0.4, single core 160 MHz, BT 5 LE, embedded 4 MB flash, 40 MHz crystal, USB-Serial/JTAG; Wi-Fi 2.4 GHz only (C5: dual band) | owner esptool findings 2026-10-12 (measured); Wi-Fi bands (read) |
 | Board port on the Mac | `/dev/cu.usbmodem*` | measured |
@@ -99,8 +99,8 @@ Keyboard layout and text → key mapping live on the **host**, not in the firmwa
 - `screen` - grabs a frame from ADB (`IPHONE_HAND_ADB_SERIAL`), supports PNG (`screencap -p`) and raw
   (`screencap` without `-p`: 12-byte header w,h,format + RGBA) and reports grab time. Finds the mirrored
   phone rectangle automatically (largest non-black column band; fall back to the measured
-  x 747–1412) and maps **Portal px ⇄ phone pt**. Public image API returns the phone crop resized to
-  **750 × 1624 (exactly 2 px per pt)**.
+  x 747–1412) and maps **Portal px ⇄ phone pt** using the screen geometry of section 9. Public
+  image API returns the phone crop resized to **exactly 2 px per pt** (750 × 1624 for 375 × 812).
 - `pointer` - finds the red ring: red mask (HSV) → connected components → keep near-square blobs of
   expected diameter (±35 %) whose centre is hollow/greyish and whose ring is roughly circular.
   Returns `(x_pt, y_pt, confidence)` or `None`. Optional confirm step: if more than one candidate,
@@ -117,10 +117,10 @@ Keyboard layout and text → key mapping live on the **host**, not in the firmwa
   `cmd+space`, `cmd+shift+3`, `tab`, `enter`, `esc`, arrows.
 - `mcp_server` - MCP stdio server.
 
-### MCP tools (all coordinates are phone points, origin top-left, 375 × 812)
+### MCP tools (all coordinates are phone points, origin top-left; size per section 9, 375 × 812 on the reference)
 | Tool | Args | Returns |
 |---|---|---|
-| `screenshot` | `mark_pointer: bool = true` | PNG 750 × 1624 (2 px/pt), pointer position if found |
+| `screenshot` | `mark_pointer: bool = true` | PNG at 2 px/pt (750 × 1624 on the reference), pointer position if found |
 | `find_pointer` | | `{x, y, confidence}` or null |
 | `move_to` | `x, y` | final pointer pos + error |
 | `tap` | `x, y, button = "left"` | `move_to` then `CLICK`; final pos + error |
@@ -130,7 +130,7 @@ Keyboard layout and text → key mapping live on the **host**, not in the firmwa
 | `type_text` | `text` | |
 | `key` | `combo` (e.g. `cmd+space`, `enter`) | |
 | `home` | | configurable: default `KEY` for `cmd+h`, fallback mouse button 3 |
-| `status` | | serial link, BLE conn/ready, ADB device, last grab ms |
+| `status` | | serial link, BLE conn/ready, ADB device, last grab ms, `screen` geometry (section 9) |
 
 CLI for manual testing: `iphone-hand status|shot out.png|pointer|move X Y|tap X Y|type TEXT|key COMBO|calibrate`.
 
@@ -138,7 +138,7 @@ CLI for manual testing: `iphone-hand status|shot out.png|pointer|move X Y|tap X 
 `iphone_hand.phone.Phone` is the one object both front ends use (MCP tools are thin wrappers):
 ```python
 class Phone:
-    def screenshot(self) -> "PIL.Image.Image": ...          # 750 x 1624, 2 px/pt
+    def screenshot(self) -> "PIL.Image.Image": ...          # 2 px/pt (750 x 1624 on the reference)
     def find_pointer(self) -> tuple[float, float, float] | None
     def move_to(self, x: float, y: float) -> dict           # {"x","y","error_pt","iterations"}
     def tap(self, x: float, y: float, button: str = "left") -> dict
@@ -213,8 +213,9 @@ and asks the owner before sending messages or deleting anything. Unlocking is do
   - `GET /` web page: live view, overlay of pointer + elements (toggle), click = tap, drag = drag,
     wheel = scroll, keyboard passthrough toggle, buttons Home / Spotlight / Back, action log, status bar
     (mirroring, fps, BLE, pointer, link).
-  - `GET /api/frame.jpg` (newest frame; `?scale=pt2` = 750×1624), `GET /api/stream.mjpeg` (≤ 10 fps,
-    downscaled), `GET /api/state`, `GET /api/elements`.
+  - `GET /api/frame.jpg` (newest frame; `?scale=pt2` = 2 px per pt, 750×1624 on the reference),
+    `GET /api/stream.mjpeg` (≤ 10 fps, pt2), `GET /api/state` (includes `screen`, section 9),
+    `GET /api/elements`.
   - `POST /api/{tap,long_press,drag,scroll,move,type,key,home,back,launch,tap_text,tap_element}` JSON bodies,
     coordinates in pt; every action returns the post-action state and is appended to the action log.
   - `/mcp` MCP streamable-HTTP endpoint with the section-3 tools + `elements`, `tap_element`, `tap_text`, `launch`, `back`.
@@ -250,3 +251,44 @@ editable, enabled, checked, focused, selected, scrollable, longClickable`), cent
 - `GET /api/elements?annotate=1` returns the frame with numbered boxes (set-of-marks) for vision models.
 Skills on top: `launch(app)` = ⌘Space, type name, Enter; `home` = configurable; `back` = left-edge swipe;
 `tap_text(text, nth)`; `scroll_until(text)`; `wait_for(text, timeout)`; `run_shortcut(name)` via Spotlight.
+
+---
+
+# v0.3 additions (2026-10-12): variable screen geometry
+
+## 9. Screen geometry (phone points)
+
+375 × 812 pt (iPhone XS) remains the **reference**: the default, and the size of every
+fixture and measured number in this document. Other phones are described by a **geometry**.
+`Phone.phone_rect(frame)` (`host/src/iphone_hand/phone.py`) is its single source, and every
+point ⇄ pixel conversion, bound, pt2 size, pointer radius and element clamp uses it.
+
+- Coordinates are points, origin top-left of the screen **as mirrored**, x to the right.
+  Valid targets are `0 ≤ x ≤ w`, `0 ≤ y ≤ h`. pt2 images are exactly `2w × 2h` pixels.
+- `GET /api/state` and the `status` tool include:
+  ```json
+  "screen": {"pt": [w, h], "px_per_pt": 3.0027, "orientation": "portrait",
+             "source": "aspect", "ambiguous": true, "candidates": [[375, 812], [390, 844], ...]}
+  ```
+  `source` is one of `config`, `scale`, `native`, `aspect`, `estimated`, `default`. Clients
+  (agents, adapters, the web page, the replay recorder) read `screen.pt`. A daemon without
+  the field is the reference.
+- Detection (`geometry.detect`), in order: the `screen_pt = [w, h]` daemon.toml override; an
+  explicit px/pt scale (`usb_pt_scale`); exact native pixels for sources whose frames are
+  unscaled (USB capture: estimated); the aspect ratio after cropping letterboxing; a @3x
+  fallback for unknown shapes. A landscape frame (wider than tall) swaps the size. The device
+  table is `geometry.IPHONE_SIZES`, with the sources cited there (read). Apple's HIG Layout
+  page no longer carries its device table (read 2026-10-12).
+- Limitation (estimated): AirPlay frames are scaled by the phone into the receiver's
+  requested size, and all Face ID iPhones have aspect ratios within ~0.002 of each other. So
+  over AirPlay detection reports `ambiguous`, keeps 375 × 812 when it is a candidate, and
+  `screen_pt` must be set for any other Face ID iPhone. Display Zoom also changes a phone's
+  point size (read, secondary source). Internal mapping stays self-consistent with a wrong
+  size, but agent-visible points, tap offsets and pointer size then differ from iOS points.
+- Daemon config: `screen_pt` (default none = detect), `device = "iphone"` (or `"ipad"`:
+  groundwork, untested, docs/ipad.md), `pointer_detector = "assistivetouch"` (or `"ipados"`:
+  prototype, untested).
+- Pointer gain is calibrated **per screen size**. The calibration cache keeps the version-2
+  layout for the reference (top-level keys) and stores other sizes under
+  `"profiles": {"<w>x<h>": {...}}`. A new size starts uncalibrated (estimated gain, closed
+  loop) until `iphone-hand calibrate` runs on that phone (docs/motion.md 5.4).

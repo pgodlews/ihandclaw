@@ -111,6 +111,54 @@ count provenance and budget limitations. Test with fake responses and daemon
 fixtures, including invalid/missing claims, timeouts and missing usage. Never
 require a paid model or real phone in CI. Provide a documented example command.
 
+## Add and calibrate a new phone
+
+The software follows the screen size, not a model list. The contract is
+[SPEC section 9](docs/SPEC.md#9-screen-geometry-phone-points). The device table is
+`IPHONE_SIZES` in `host/src/iphone_hand/geometry.py`.
+
+1. **Size.** Look the phone up in `IPHONE_SIZES`. To add a missing model, cite an Apple source
+   for its points and scale (or Apple's pixels plus the scale) in the row's `source`, the same
+   way the existing rows do. Never derive a size from a screenshot alone. Check Display Zoom
+   (Settings > Display & Brightness): it changes the point size (read, secondary source).
+2. **Offline check.** Add the size to the parametrized synthetic tests in
+   `host/tests/test_geometry.py` (native pixels = points × scale). Run all required checks.
+3. **Configure.** With the daemon running and the phone mirroring, read `screen` from
+   `GET /api/state`. Over AirPlay, Face ID iPhones are `ambiguous` and the 375 × 812 default
+   is kept; set `screen_pt = [<w>, <h>]` (portrait points) in your private daemon.toml and
+   restart the daemon.
+4. **Calibrate.** This is required once per phone: AssistiveTouch gain is per device and per
+   tracking-speed setting. Stop the daemon first, because the board accepts one client. Then
+   run the existing `calibrate` command against the receiver's frames and the board:
+
+   ```sh
+   uv run --project host iphone-hand --port <board-port> --frames-dir <frames-dir> \
+     --screen-pt <w> <h> calibrate
+   ```
+
+   The result names its `profile` (`<w>x<h>`) and is saved in the private calibration cache
+   next to the reference profile. Restart the daemon so it loads the profile. Never copy
+   another phone's numbers into a profile.
+
+Do not edit `docs/SPEC.md` for a new size; the table and tests are enough. Label what you
+measured.
+
+### Hardware validation checklist (owner, per new phone)
+
+Record each item as measured/not done in the PR, with the phone model, iOS version and point size:
+
+- [ ] **Auto-detect:** `/api/state` `screen` shows the expected `pt`, `orientation` and
+      `source`. With AirPlay, confirm it is `ambiguous` without `screen_pt` and correct with it.
+      Rotate an app that supports landscape and check the size swaps.
+- [ ] **Calibrate:** run step 4. Record the profile, `rmse_pt` and samples. The pointer
+      must stay on screen throughout.
+- [ ] **Tap accuracy at the corners:** `POST /api/move` to (12, 12), (w−12, 12), (12, h−12),
+      (w−12, h−12) and the centre. Record `error_pt` (target ≤ 3 pt) and iterations. Then tap a
+      harmless target near each corner and confirm the phone reacted to that target.
+- [ ] **One Benchy run:** run the README's Benchy command once (`--repeat 1`) and keep the
+      result locally. Share sanitized metrics only through `bench/results`, with the phone
+      model and point size named.
+
 ## Add a board target
 
 Read [firmware](firmware/README.md) and [C3 port notes](docs/ESP32C3_PORT.md).

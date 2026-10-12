@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from .pointer import find_pointer
+from .pointer import find_pointer, get_detector
 from .screen import PhoneRect
 
 
@@ -73,12 +73,13 @@ def _digit(mask):
     return d, float(scores[d])
 
 
-def badges(image: Image.Image) -> list[dict]:
+def badges(image: Image.Image, pt_width: int = 375) -> list[dict]:
     """Find white numerals surrounded by a neutral dark badge, at any frame scale."""
-    # Work at reference width to make the measured fixture's glyph geometry scale-independent.
+    # Work at the measured fixture's 3.0027 px/pt (XS: 1126 px for 375 pt) so its glyph
+    # geometry, which is in points, holds for every screen size and frame scale.
     w, h = image.size
-    scale = w / 1126
-    rgb = np.asarray(image.convert("RGB").resize((1126, round(h / scale))))
+    scale = w * 375 / (1126 * pt_width)
+    rgb = np.asarray(image.convert("RGB").resize((round(w / scale), round(h / scale))))
     gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
     mask = (gray > 205).astype(np.uint8)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -142,26 +143,29 @@ def ui_element(id, text, type, bounds, center=None, **extra):
 
 
 class Elements:
-    def __init__(self, reader=None, *, tap_offset=(10.0, 12.0)):
+    def __init__(self, reader=None, *, tap_offset=(10.0, 12.0), pointer_detector="assistivetouch"):
         self.reader = reader if reader is not None else RapidOCRReader()
         self.tap_offset = tap_offset  # pt below/right of badge bottom-right; estimated, configurable
+        self.pointer_detector = get_detector(pointer_detector)
         self.lock = threading.Lock()
 
-    def analyze(self, image: Image.Image) -> dict:
+    def analyze(self, image: Image.Image, rect: PhoneRect | None = None) -> dict:
+        """`rect` carries the point size (Phone.phone_rect); default: the 375x812 reference."""
         with self.lock:
-            return self._analyze(image)
+            return self._analyze(image, rect or PhoneRect(0, 0, *image.size))
 
-    def _analyze(self, image):
+    def _analyze(self, image, rect):
         start = time.perf_counter()
-        rect = PhoneRect(0, 0, *image.size)
+        pt_w, pt_h = rect.pt
         items = []
-        for badge in badges(image):
+        for badge in badges(image.crop(rect.box) if rect.box != (0, 0, *image.size) else image,
+                            rect.pt_width):
             l, t, r, b = badge["bounds"]
-            left, top = rect.px_to_pt(l, t); right, bottom = rect.px_to_pt(r, b)
-            center = (min(374, right+self.tap_offset[0]), min(811, bottom+self.tap_offset[1]))
+            left, top = rect.px_to_pt(rect.x + l, rect.y + t); right, bottom = rect.px_to_pt(rect.x + r, rect.y + b)
+            center = (min(pt_w-1, right+self.tap_offset[0]), min(pt_h-1, bottom+self.tap_offset[1]))
             # Estimated local region; stop before the next badge to the right/below.
             items.append(ui_element(f"vc{badge['number']}", str(badge['number']), "vc_item",
-                                    (left, top, min(375, left+85), min(812, top+85)), center,
+                                    (left, top, min(pt_w, left+85), min(pt_h, top+85)), center,
                                     badge_bounds=[left, top, right, bottom], confidence=badge["confidence"]))
         for item in items:
             l, t, r, b = item["bounds_pt"]
@@ -193,17 +197,18 @@ class Elements:
         for item in items:
             l, t, r, b = item["bounds_pt"]
             item["bounds"] = f"[{l:g},{t:g}][{r:g},{b:g}]"
-        position = find_pointer(image, rect)
+        position = find_pointer(image, rect, self.pointer_detector)
         return {"elements": items, "pointer": dict(zip(("x", "y", "confidence"), position)) if position else None,
                 "tap_offset_pt": list(self.tap_offset), "ocr_available": error is None, "ocr_error": error,
-                "latency_ms": (time.perf_counter()-start)*1000}
+                "screen_pt": [pt_w, pt_h], "latency_ms": (time.perf_counter()-start)*1000}
 
     @staticmethod
     def annotate(image, result):
         image = image.copy().convert("RGB")
         draw = ImageDraw.Draw(image)
         font = ImageFont.load_default(size=max(14, round(image.width/40)))
-        sx, sy = image.width/375, image.height/812
+        pt_w, pt_h = result.get("screen_pt", (375, 812))
+        sx, sy = image.width/pt_w, image.height/pt_h
         for item in result["elements"]:
             l,t,r,b = item["bounds_pt"]
             draw.rectangle((l*sx,t*sy,r*sx,b*sy), outline="cyan", width=2)

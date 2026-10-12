@@ -10,8 +10,9 @@ import time
 
 from PIL import Image, ImageDraw
 
+from .geometry import REFERENCE_PT, Geometry, parse_screen_pt
 from .motion import validate_target
-from .screen import PUBLIC_SIZE, phone_crop
+from .screen import find_phone_rect, phone_crop
 
 
 # Presets for acceleration curves: (a, b) in gain = a + b * ln(1 + speed)
@@ -24,15 +25,18 @@ def _int(value: str) -> int:
 
 
 class FakeSerialDevice:
-    def __init__(self, *, position=(187.5, 406.0), sensitivity=(1.0, 1.0),
+    def __init__(self, *, position=None, sensitivity=(1.0, 1.0),
                  max_read: int = 256, connected: bool = True,
                  accel_curve: Callable[[float], float] | tuple[float, float] | None = None,
                  noise_std: float = 0.0, rng_seed: int | None = None,
-                 chip: str = "esp32c5"):
+                 chip: str = "esp32c5", screen_pt=REFERENCE_PT):
         if chip not in {"esp32c3", "esp32c5"}:
             raise ValueError("unsupported fake chip")
         self.chip = chip
-        self.position = list(position)
+        # Simulated screen size in points; the pointer is clamped to it like iOS clamps it.
+        self.screen_pt = parse_screen_pt(screen_pt)
+        self.position = list(position if position is not None else
+                             (self.screen_pt[0] / 2, self.screen_pt[1] / 2))
         self.sensitivity = sensitivity
         self.max_read = max_read
         self.connected = self.ready = connected
@@ -207,7 +211,7 @@ class FakeSerialDevice:
             sx, sy = max(-self.step, min(self.step, dx)), max(-self.step, min(self.step, dy))
             speed = math.hypot(sx, sy) * 15 / self.interval
             gain = self._gain(speed)
-            for axis, (delta, bound) in enumerate(zip((sx, sy), (375, 812))):
+            for axis, (delta, bound) in enumerate(zip((sx, sy), self.screen_pt)):
                 noise = self._rng.gauss(0, self.noise_std) if self.noise_std > 0 else 0.0
                 self.position[axis] = max(0, min(bound, self.position[axis] +
                                                 delta * gain * self.sensitivity[axis] + noise))
@@ -216,11 +220,21 @@ class FakeSerialDevice:
 
 
 class SimulatedScreen:
-    """Render a pointer driven by FakeSerialDevice onto a static phone image."""
+    """Render a pointer driven by FakeSerialDevice onto a static phone image.
 
-    def __init__(self, device: FakeSerialDevice, image: Image.Image | None = None):
+    `px_per_pt` sets the frame scale: 2 gives pt2 frames (750x1624 for the reference), 3 the
+    native @3x pixels of a real phone (1170x2532 for 390x844). Frames are unscaled renders,
+    so the geometry can be detected from exact native pixels.
+    """
+    frames_native = True
+
+    def __init__(self, device: FakeSerialDevice, image: Image.Image | None = None, *,
+                 px_per_pt: float = 2.0):
         self.device = device
-        self.background = phone_crop(image) if image is not None else Image.new("RGB", PUBLIC_SIZE, "white")
+        self.px_per_pt = float(px_per_pt)
+        size = tuple(round(p * self.px_per_pt) for p in device.screen_pt)
+        background = phone_crop(image) if image is not None else Image.new("RGB", size, "white")
+        self.background = background if background.size == size else background.resize(size)
         self.last_grab_ms = None
         self.hidden = False
 
@@ -228,10 +242,12 @@ class SimulatedScreen:
         start = time.perf_counter()
         image = self.background.copy()
         if not self.hidden:
-            x, y = (p * 2 for p in self.device.position)
+            x, y = (p * self.px_per_pt for p in self.device.position)
+            # Ring: 31 pt across (15.5 pt radius) with a 9.5 pt grey centre, as on the Portal.
+            outer, inner = 15.5 * self.px_per_pt, 9.5 * self.px_per_pt
             draw = ImageDraw.Draw(image)
-            draw.ellipse((x - 31, y - 31, x + 31, y + 31), fill=(210, 0, 0))
-            draw.ellipse((x - 19, y - 19, x + 19, y + 19), fill=(155, 155, 155))
+            draw.ellipse((x - outer, y - outer, x + outer, y + outer), fill=(210, 0, 0))
+            draw.ellipse((x - inner, y - inner, x + inner, y + inner), fill=(155, 155, 155))
         self.last_grab_ms = (time.perf_counter() - start) * 1000
         return image
 
@@ -243,10 +259,21 @@ class SimulatedScreen:
 class FakePhone:
     """Static fixture image and call recorder, with the exact public Phone API."""
 
-    def __init__(self, image: Image.Image | None = None, *, position=(187.5, 406.0)):
-        self.image = phone_crop(image) if image is not None else Image.new("RGB", PUBLIC_SIZE, "white")
-        self.position = tuple(position)
+    def __init__(self, image: Image.Image | None = None, *, position=None, screen_pt=None):
+        # screen_pt: the simulated point size; default from the image's shape, else 375x812.
+        rect = find_phone_rect(image, screen_pt=screen_pt) if image is not None else None
+        pt = rect.pt if rect else (parse_screen_pt(screen_pt) or REFERENCE_PT)
+        self.screen = Geometry(*pt, 2.0, "config" if screen_pt else rect.source if rect else "default",
+                               rect.candidates if rect else ())
+        self.image = phone_crop(image, rect) if image is not None else Image.new("RGB", self.screen.public_size, "white")
+        self.position = tuple(position if position is not None else (pt[0] / 2, pt[1] / 2))
         self.calls: list[tuple] = []
+
+    def bounds(self) -> tuple[int, int]:
+        return self.screen.pt
+
+    def geometry(self) -> Geometry:
+        return self.screen
 
     def screenshot(self) -> Image.Image:
         self.calls.append(("screenshot",))
@@ -260,7 +287,7 @@ class FakePhone:
         return (*self.position, 1.0)
 
     def move_to(self, x: float, y: float) -> dict:
-        validate_target(x, y)
+        validate_target(x, y, self.screen.pt)
         self.calls.append(("move_to", x, y))
         self.position = (x, y)
         return {"x": x, "y": y, "error_pt": 0.0, "iterations": 1}
@@ -300,7 +327,7 @@ class FakePhone:
 
     def status(self) -> dict:
         self.calls.append(("status",))
-        return {"fake": True, "last_grab_ms": None}
+        return {"fake": True, "last_grab_ms": None, "screen": self.screen.to_dict()}
 
     def calibrate(self) -> dict:
         self.calls.append(("calibrate",))

@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 import time
 
-from bench.daemon_client import DaemonClient
+from bench.daemon_client import REFERENCE_PT, DaemonClient
 
 class JSONParserError(ValueError):
     pass
@@ -51,9 +51,11 @@ def execute(args, client):
         client.get_frame(scale="pt2").save(args.out, format="JPEG")
         return {"file": args.out, "pixels_per_point": 2}
     if cmd == "tap":
+        # The daemon's reported screen size, not a hard-coded phone.
+        w, h = client.screen_pt() if hasattr(client, "screen_pt") else REFERENCE_PT
         if not (math.isfinite(args.x) and math.isfinite(args.y)
-                and 0 <= args.x < 375 and 0 <= args.y < 812):
-            raise ValueError("tap coordinates must be within 375x812 points")
+                and 0 <= args.x < w and 0 <= args.y < h):
+            raise ValueError(f"tap coordinates must be within {w}x{h} points")
         return client.tap(args.x, args.y)
     if cmd == "tap_el":
         return client.tap_element(args.id)

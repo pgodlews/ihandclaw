@@ -114,6 +114,9 @@ class ExternalUxPlayReceiver:
 
 
 class AirPlayScreen:
+    # Estimated: the phone scales its screen into the receiver's requested display size
+    # (UxPlay -s), so frame pixels do not identify the model; only the aspect ratio does.
+    frames_native = False
     # iOS sends no frames while the screen is still (measured 2026-10-10, UxPlay 1.73.6), so
     # frame age alone cannot tell "static screen" from "disconnected". When `connected` reports
     # an active AirPlay client, the newest complete frame is valid however old it is.

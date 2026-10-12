@@ -2,7 +2,7 @@
 
 The **Record/Replay Simulator** enables autonomous agents (such as DroidClaw, Claude via MCP, or local LM Studio models) to be developed, evaluated, and tested offline without physical iPhone XS hardware, ESP32 BLE boards, or live AirPlay mirroring.
 
-The simulator implements the daemon HTTP specification defined in `docs/SPEC.md` (sections 6 and 8), using iPhone XS point coordinates (**375 × 812 pt**) and the DroidClaw `UIElement` contract.
+The simulator implements the daemon HTTP specification defined in `docs/SPEC.md` (sections 6 and 8), using the recorded phone's point coordinates and the DroidClaw `UIElement` contract. `screen_size_pt` is read from the daemon's `/api/state` `screen.pt` at the first recorded step (**375 × 812 pt** for the iPhone XS reference, and for daemons without the field). A graph never mixes screen sizes: the builder refuses sessions recorded at different sizes.
 
 ---
 
@@ -187,10 +187,10 @@ uv run python -m replay.server \
 | Route | Method | Description |
 |---|---|---|
 | `/` | `GET` | Web dashboard: live screen view, element overlays, status bar, and real-time action log |
-| `/api/frame.jpg` | `GET` | Current screen JPEG frame (`?scale=pt2` resizes to 750×1624, 2 px/pt) |
+| `/api/frame.jpg` | `GET` | Current screen JPEG frame (`?scale=pt2` resizes to 2 px/pt of `screen_size_pt`: 750×1624 for 375×812) |
 | `/api/stream.mjpeg` | `GET` | Multi-part MJPEG stream of current screen |
 | `/api/elements` | `GET` | DroidClaw UIElement JSON (`?annotate=1` returns JPEG with cyan numbered bounding boxes) |
-| `/api/state` | `GET` | Simulator status: current screen ID, off-path count, BLE/link status, and action log |
+| `/api/state` | `GET` | Simulator status: current screen ID, `screen.pt`, off-path count, BLE/link status, and action log |
 | `/api/pause` | `POST` | Global kill-switch: `{"paused": true/false}` |
 | `/api/reset` | `POST` | Reset simulator back to graph's initial screen |
 | `/api/{action}` | `POST` | Execute action (`tap`, `long_press`, `drag`, `scroll`, `move`, `type`, `key`, `home`, `back`, `launch`, `tap_text`, `tap_element`) |

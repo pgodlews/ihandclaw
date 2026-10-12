@@ -14,7 +14,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from .manifest import UIElement, is_point_in_bounds, parse_bounds
+from .manifest import REFERENCE_PT, UIElement, is_point_in_bounds, parse_bounds
 
 
 def normalize_combo(combo: str) -> str:
@@ -122,9 +122,11 @@ class ScreenNode:
 class ScreenGraph:
     """Directed graph of screens and transitions with fuzzy action matching."""
 
-    def __init__(self, initial_screen_id: str | None = None):
+    def __init__(self, initial_screen_id: str | None = None, screen_size_pt: list[int] | None = None):
         self.nodes: dict[str, ScreenNode] = {}
         self.initial_screen_id: str | None = initial_screen_id
+        # Point space of every frame, element and recorded coordinate in this graph.
+        self.screen_size_pt: list[int] = list(screen_size_pt or REFERENCE_PT)
 
     def add_node(self, node: ScreenNode) -> None:
         self.nodes[node.screen_id] = node
@@ -337,12 +339,14 @@ class ScreenGraph:
     def to_dict(self) -> dict[str, Any]:
         return {
             "initial_screen_id": self.initial_screen_id,
+            "screen_size_pt": self.screen_size_pt,
             "nodes": {k: node.to_dict() for k, node in self.nodes.items()},
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ScreenGraph:
-        graph = cls(initial_screen_id=data.get("initial_screen_id"))
+        graph = cls(initial_screen_id=data.get("initial_screen_id"),
+                    screen_size_pt=data.get("screen_size_pt"))
         for node_id, node_data in data.get("nodes", {}).items():
             graph.add_node(ScreenNode.from_dict(node_data))
         return graph

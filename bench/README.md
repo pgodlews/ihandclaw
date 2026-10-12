@@ -59,7 +59,8 @@ and disabled settings/session persistence. `--safe-mode` disables customizations
 These flags were checked against local `claude --help`; steering was not run.
 Managed policies may still affect permissions. This is a tool permission boundary,
 not an OS sandbox. The prompt explains safety, editing focus/esc, stale Notes,
-and 375x812 point coordinates (pt2 screenshots are 750x1624 pixels).
+and point coordinates of the size the daemon reports in `/api/state` `screen.pt`
+(375x812 with 750x1624 pt2 screenshots on the reference XS; the reference when the field is missing).
 Raw Claude JSON goes to `claude_response.json`; its final text becomes stdout.
 `BENCH_USAGE` includes input/output tokens, cache input tokens, and total cost
 when supplied by Claude. Usage is agent-reported, not independently metered.
@@ -97,7 +98,9 @@ Read: commands are `state`, `elements`, `shot OUT.jpg`, `tap X Y` (points),
 `launch APP`, `back`, `home`, `scroll DY`. Output has `ok/error/detail`, with a
 nonzero exit code on failure. Literal `\n` becomes a real newline. Successful
 `typed` counts and `recovered_with` are preserved. Tokens are redacted; raw
-connection exception messages are suppressed. Point bounds are checked locally.
+connection exception messages are suppressed. Point bounds are checked locally against
+the daemon's reported `screen.pt`. `FakeDaemon(screen_pt=(w, h))` scales its synthetic layouts
+for offline tests at other sizes.
 Daemon safety remains responsible for rejecting secure fields; prompt safety
 alone cannot prevent every undesirable action.
 

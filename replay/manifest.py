@@ -1,7 +1,8 @@
 """Data structures and serialization for recorded replay sessions and manifests.
 
 Follows the droidclaw UIElement specification and docs/SPEC.md (sections 6 and 8).
-Phone coordinates are always in points (iPhone XS: 375x812 pt).
+Phone coordinates are always in points of the recorded screen, `screen_size_pt`
+(the daemon's GET /api/state screen.pt; 375x812 for the iPhone XS reference).
 """
 from __future__ import annotations
 
@@ -11,6 +12,8 @@ import json
 from pathlib import Path
 import re
 from typing import Any
+
+REFERENCE_PT = [375, 812]  # SPEC reference phone (iPhone XS)
 
 
 @dataclass
@@ -133,7 +136,7 @@ class SessionManifest:
     created_at: str
     daemon_url: str
     version: str = "1.0"
-    screen_size_pt: list[int] = field(default_factory=lambda: [375, 812])
+    screen_size_pt: list[int] = field(default_factory=lambda: list(REFERENCE_PT))
     steps: list[StepRecord] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -160,6 +163,6 @@ class SessionManifest:
             session_id=data.get("session_id", "session"),
             created_at=data.get("created_at", datetime.now(timezone.utc).isoformat()),
             daemon_url=data.get("daemon_url", "http://iphone-hand.local:8790"),
-            screen_size_pt=data.get("screen_size_pt", [375, 812]),
+            screen_size_pt=list(data.get("screen_size_pt", REFERENCE_PT)),
             steps=steps,
         )

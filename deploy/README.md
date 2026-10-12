@@ -31,9 +31,12 @@ home_action = "cmd+h"
 pointer_recover_key = "" # opt in with "esc"; may end editing/cancel searches or dialogs
 vc_offset_x = 10.0
 vc_offset_y = 12.0
+# screen_pt = [390, 844]  # portrait points; needed over AirPlay for Face ID iPhones other than 375x812
 ```
 
 Configure `bind` to a name/address assigned to this host. Optional `frames_dir` (absolute path) overrides where UxPlay writes JPEG frames; the default is `$XDG_RUNTIME_DIR/iphone-hand/frames` on Linux and `~/Library/Caches/iphone-hand/frames` on macOS (see `deploy/macos/README.md` for the macOS launchd variant). `iphone-hand.local` is only a placeholder; do not use the board's hostname as the daemon bind. Serial users need permission to access their actual board port (typically membership of `dialout`, followed by a fresh login). For Wi-Fi, change `link` to `tcp://iphone-hand.local:7878` and supply a **separate board token** in `link_token`. This branch lazily imports `iphone_hand.tcp_link.TcpLink`; install/merge that implementation before choosing TCP. The factory does not open either transport at import time. Read: in child mode, optional `allow_device_id` adds `-restrict -allow` to UxPlay; obtain and configure the value privately on the target. Read: in external mode, receiver arguments belong to the separate unit (see below). Unknown configuration keys are rejected.
+
+Read: `screen_pt` (optional) fixes the phone's point size; without it the daemon detects it from frames and reports it in `/api/state` `screen`, keeping 375x812 when AirPlay frames are ambiguous (SPEC section 9). `device = "ipad"` and `pointer_detector = "ipados"` exist as untested groundwork (docs/ipad.md).
 
 Read: `pointer_recover_key = "esc"` enables one key press after pointer reveal/homing fails, then waits the motion settle delay and retries detection/reveal/homing once. Empty string (default) disables recovery. Phone/Motion also default to off. Successful results and action logs include `recovered_with`; failed recovery returns HTTP 503 with `error_class = "PointerHidden"` and a fixed editing-focus hint, plus the attempted key when enabled. Measured (user observations, 2026-10-12): Esc restored the hidden pointer in three editing fields, ending editing; it may cancel a search or dismiss a dialog. This is an opt-in workaround, not an Apple-documented guarantee.
 

@@ -48,8 +48,9 @@ class FakeBackend:
 
 def test_pt_size_derivation():
     assert _pt_size((1125, 2436), 0) == (375, 812)  # XS native @3x
-    # AirPlay-measured XS frame is slightly cropped (1126x2434): still 375 wide, 811 tall.
-    assert _pt_size((1126, 2434), 0) == (375, 811)
+    # AirPlay-measured XS frame (1126x2434) is within the native tolerance of 1125x2436:
+    # 375x812, where the old per-axis rounding gave a non-uniform 375x811.
+    assert _pt_size((1126, 2434), 0) == (375, 812)
     assert _pt_size((2000, 1000), 3.0027) == (666, 333)  # explicit per-model scale wins
     assert _pt_size((1170, 2532), 0) == (390, 844)  # iPhone 12/13/14 @3x
     assert _pt_size((828, 1792), 0) == (414, 896)  # iPhone 11/XR @2x
