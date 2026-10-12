@@ -1,0 +1,35 @@
+id: 02_open_clock_timer
+title: "Open Clock and Switch to Timer Tab"
+difficulty: easy
+goal: "Open the Clock app and switch to the Timer tab."
+start_state:
+  home: true
+  launch: "Clock"
+  settle_s: 1.0
+budget:
+  max_steps: 8
+  max_time_seconds: 40.0
+predicates:
+  type: all_of
+  predicates:
+    - type: ocr_text_contains
+      text: "Timer"
+    - type: any_of
+      predicates:
+        - type: ocr_text_contains
+          text: "Start"
+        - type: ocr_text_contains
+          text: "Cancel"
+        - type: ocr_text_contains
+          text: "When Timer Ends"
+        - type: ocr_text_contains
+          text: "Stop Playing"
+reliability:
+  level: high
+  note: "Clock bottom tab bar has 'Timer', and the active tab displays prominent Timer controls ('Start', 'Cancel', 'When Timer Ends') in OCR."
+safety:
+  touches_accounts: false
+  sends_messages: false
+  makes_purchases: false
+  deletes_data: false
+  notes: "Navigation to Clock Timer tab only; no alarms or timers altered."

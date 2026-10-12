@@ -1,0 +1,8 @@
+{
+  "_note": "Frames from UxPlay 1.68 on the Linux daemon host (jpegenc quality=90), full frame = phone, 1126x2434 px for 375x812 pt (3.0027 px/pt). Voice Control 'Item Numbers' overlay on.",
+  "home-voicecontrol-pointer.jpg": {
+    "pointer_pt": [211.6, 430.1],
+    "voice_control_numbers": 24,
+    "note": "home screen; numbers 1-24 are Voice Control badges at the top-left of each tappable item; ring over the top-left of the App Store icon"
+  }
+}

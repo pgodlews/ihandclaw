@@ -1,0 +1,33 @@
+id: 09_create_note_text
+title: "Create Note with Given Text in Notes"
+difficulty: hard
+goal: "Open the Notes app, create a new note, and type 'Meeting notes: bench ready'."
+start_state:
+  home: true
+  launch: "Notes"
+  settle_s: 1.0
+budget:
+  max_steps: 18
+  max_time_seconds: 90.0
+predicates:
+  type: all_of
+  predicates:
+    - type: ocr_text_contains
+      text: "Meeting notes"
+    - type: ocr_text_contains
+      text: "bench ready"
+    - type: any_of
+      predicates:
+        - type: ocr_text_contains
+          text: "Done"
+        - type: ocr_text_contains
+          text: "Notes"
+reliability:
+  level: high
+  note: "Typed text is displayed in the active note canvas in high-contrast text. OCR reliably catches 'Meeting notes' and 'bench ready' alongside editor controls like 'Done'."
+safety:
+  touches_accounts: false
+  sends_messages: false
+  makes_purchases: false
+  deletes_data: false
+  notes: "Creates a local draft note containing non-sensitive test text; does not delete or touch accounts."

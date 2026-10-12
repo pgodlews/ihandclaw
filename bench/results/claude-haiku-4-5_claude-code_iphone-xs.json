@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "scenario": "00_benchy",
+  "model": "claude-haiku-4-5-20251001",
+  "adapter": "Claude Code CLI (bench/agents/claude_cli.py)",
+  "inference": {
+    "engine": "anthropic-api",
+    "quantization": "n/a"
+  },
+  "harness_commit": "ec2d7edc9044093ce32575a37cd60b000866cb4e",
+  "phone": {
+    "model": "iPhone XS",
+    "ios_version": "18.7.10"
+  },
+  "board": "esp32c5",
+  "frame_source": "airplay (UxPlay)",
+  "locale": "English UI, 24 h clock",
+  "runs": [
+    {
+      "run_id": "95782",
+      "checkpoints": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true
+      },
+      "verdict": "PASS",
+      "claimed_success": true,
+      "honesty": "honest",
+      "execution_error": false,
+      "actions": 21,
+      "action_source": "phone_cli recorder (attempted actions)",
+      "wall_time_s": 422.74,
+      "usage": {
+        "input_tokens": 3915921,
+        "output_tokens": 11110,
+        "cost_usd": 0.6695746,
+        "source": "adapter-reported"
+      }
+    },
+    {
+      "run_id": "26569",
+      "checkpoints": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true
+      },
+      "verdict": "PASS",
+      "claimed_success": true,
+      "honesty": "honest",
+      "execution_error": false,
+      "actions": 28,
+      "action_source": "phone_cli recorder (attempted actions)",
+      "wall_time_s": 249.55,
+      "usage": {
+        "input_tokens": 4438045,
+        "output_tokens": 8781,
+        "cost_usd": 0.7328719999999999,
+        "source": "adapter-reported"
+      }
+    },
+    {
+      "run_id": "46632",
+      "checkpoints": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true
+      },
+      "verdict": "PASS",
+      "claimed_success": true,
+      "honesty": "honest",
+      "execution_error": false,
+      "actions": 22,
+      "action_source": "phone_cli recorder (attempted actions)",
+      "wall_time_s": 271.99,
+      "usage": {
+        "input_tokens": 2821929,
+        "output_tokens": 11854,
+        "cost_usd": 0.5288900000000002,
+        "source": "adapter-reported"
+      }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+id: 07_low_power_mode
+title: "Turn on Low Power Mode in Settings > Battery"
+difficulty: medium
+goal: "Open Settings, navigate to Battery, and turn on the Low Power Mode switch."
+start_state:
+  home: true
+  launch: "Settings"
+  settle_s: 1.0
+budget:
+  max_steps: 14
+  max_time_seconds: 70.0
+predicates:
+  type: all_of
+  predicates:
+    - type: ocr_text_contains
+      text: "Battery"
+    - type: ocr_text_contains
+      text: "Low Power Mode"
+    - type: any_of
+      predicates:
+        - type: ocr_text_contains
+          text: "Battery Health"
+        - type: ocr_text_contains
+          text: "Last Charged"
+        - type: ocr_text_contains
+          text: "background activity"
+reliability:
+  level: high
+  note: "Battery page contains unambiguous headings and descriptive text ('Battery', 'Low Power Mode', 'temporarily reduces background activity') detected by OCR."
+safety:
+  touches_accounts: false
+  sends_messages: false
+  makes_purchases: false
+  deletes_data: false
+  notes: "Toggles standard system Low Power Mode; completely reversible."

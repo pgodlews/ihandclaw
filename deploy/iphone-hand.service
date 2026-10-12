@@ -1,0 +1,19 @@
+[Unit]
+Description=iPhone Hand headless HID daemon
+After=network-online.target iphone-hand-uxplay.service
+Wants=network-online.target iphone-hand-uxplay.service
+
+[Service]
+Type=simple
+WorkingDirectory=%h/iphone-hand/host
+ExecStart=%h/iphone-hand/host/.venv/bin/iphone-hand-daemon
+Restart=on-failure
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+UMask=0077
+NoNewPrivileges=true
+KillMode=control-group
+TimeoutStopSec=15
+
+[Install]
+WantedBy=default.target

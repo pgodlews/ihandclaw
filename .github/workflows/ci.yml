@@ -1,0 +1,56 @@
+name: Contributor checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12.10'
+      - name: Install development environment
+        run: |
+          python -m pip install uv==0.9.2
+          uv sync --project host --python 3.12
+      - name: Host tests
+        run: uv run --project host --no-sync python -m pytest host/tests
+      - name: Benchmark and submission tests
+        run: uv run --project host --no-sync python -m pytest bench/tests
+      - name: Catalog and playbook tests
+        run: uv run --project host --no-sync python -m pytest catalog
+      - name: Native firmware tests and sanitizers
+        run: |
+          make -C firmware/test
+          make -C firmware/test sanitize
+      - name: Validate result submissions
+        run: uv run --project host --no-sync python -m bench.leaderboard
+  firmware:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [esp32c3, esp32c5]
+    # ESP-IDF 6.2 is unreleased; master (reports 6.2.0) pinned by digest. See docs/contributor-ci.md.
+    container: espressif/idf:latest@sha256:6ad927cfb85a5fea82da64b00960b01adff4fc6019ffcdb18caa3da642d55343
+    env:
+      IDF_COMPONENT_MANAGER: '0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build target without hardware
+        shell: bash
+        working-directory: firmware
+        run: |
+          . /opt/esp/idf/export.sh
+          idf.py -B build/${{ matrix.target }} set-target ${{ matrix.target }} build
+          make -C test check-map

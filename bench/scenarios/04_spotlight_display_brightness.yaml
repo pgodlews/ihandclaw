@@ -1,0 +1,33 @@
+id: 04_spotlight_display_brightness
+title: "Open Display & Brightness via Spotlight"
+difficulty: medium
+goal: "Open the 'Display & Brightness' settings page directly using Spotlight search."
+start_state:
+  home: true
+  launch: null
+  settle_s: 1.0
+budget:
+  max_steps: 10
+  max_time_seconds: 50.0
+predicates:
+  type: all_of
+  predicates:
+    - type: ocr_text_contains
+      text: "Display & Brightness"
+    - type: any_of
+      predicates:
+        - type: ocr_text_contains
+          text: "Appearance"
+        - type: ocr_text_contains
+          text: "Brightness"
+        - type: ocr_text_contains
+          text: "True Tone"
+reliability:
+  level: high
+  note: "Spotlight navigation directly reaches the sub-page, where the title header 'Display & Brightness' and section labels 'Appearance' or 'Brightness' are distinct in OCR."
+safety:
+  touches_accounts: false
+  sends_messages: false
+  makes_purchases: false
+  deletes_data: false
+  notes: "Navigation to sub-page only; no settings modified."

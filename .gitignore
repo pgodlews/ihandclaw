@@ -1,0 +1,21 @@
+build/
+firmware/build/
+firmware/managed_components/
+firmware/sdkconfig
+firmware/sdkconfig.old
+__pycache__/
+.venv/
+.pytest_cache/
+*.egg-info/
+runs/
+# uv lockfiles contain registry hostnames; keep dependency resolution local.
+/host/uv.lock
+# Offline commit objects/bundle when worktree git administration is read-only.
+/.git-artifacts/
+
+# Local benchmark development caches and temporary files.
+/.tmp/
+/host/.tmp/
+
+# Machine-specific agent notes
+AGENTS.local.md

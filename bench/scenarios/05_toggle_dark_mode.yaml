@@ -1,0 +1,29 @@
+id: 05_toggle_dark_mode
+title: "Toggle Dark Mode in Settings > Display & Brightness"
+difficulty: medium
+goal: "Navigate to Settings > Display & Brightness and enable Dark mode appearance."
+start_state:
+  home: true
+  launch: "Settings"
+  settle_s: 1.0
+budget:
+  max_steps: 14
+  max_time_seconds: 70.0
+predicates:
+  type: all_of
+  predicates:
+    - type: ocr_text_contains
+      text: "Display & Brightness"
+    - type: ocr_text_contains
+      text: "Dark"
+    - type: screenshot_dark_mode
+      max_mean_luminance: 120.0
+reliability:
+  level: medium
+  note: "On iOS Settings > Display & Brightness, both 'Light' and 'Dark' text options are always present. Toggling Dark mode shifts the system appearance to dark theme (mean frame luminance drops significantly below 120, compared to > 180 in Light mode). Combining OCR validation of the page context with dark luminance check is much more robust than detecting subtle radio checkmark pixels."
+safety:
+  touches_accounts: false
+  sends_messages: false
+  makes_purchases: false
+  deletes_data: false
+  notes: "Appearance toggle only; completely reversible."

@@ -1,0 +1,67 @@
+{
+  "_note": "Portal+ screencaps (2160x1440) of the mirrored iPhone XS. Phone image x 747-1412, y 0-1439, 1.7734 px/pt. Pointer centre in Portal px, measured from the red-ring bounding box.",
+  "home-pointer-notes-at-button.png": {
+    "pointer_px": [
+      991.5,
+      677.0
+    ],
+    "pointer_bbox_px": [
+      964,
+      651,
+      1019,
+      703
+    ],
+    "other": "AssistiveTouch menu button visible (white disc in dark ring) at about px (815, 1031); not the pointer. It is now hidden on the phone."
+  },
+  "home-pointer-notes.png": {
+    "pointer_px": [
+      1006.5,
+      672.0
+    ],
+    "pointer_bbox_px": [
+      979,
+      646,
+      1034,
+      698
+    ]
+  },
+  "red_distractors_px": {
+    "calendar_text": [
+      985,
+      130,
+      1009,
+      142
+    ],
+    "battery_arc": [
+      1125,
+      484,
+      1154,
+      501
+    ],
+    "messages_badge": [
+      1187,
+      1269,
+      1229,
+      1310
+    ],
+    "chrome_icon_arc": [
+      967,
+      1297,
+      1038,
+      1340
+    ],
+    "youtube_icon": [
+      1273,
+      1311,
+      1353,
+      1367
+    ]
+  },
+  "lock-pointer-over-clock.png": {
+    "pointer_px": [
+      939.0,
+      297.0
+    ],
+    "note": "lock screen; ring over the blue clock digits, so the translucent centre is not neutral grey"
+  }
+}

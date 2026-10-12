@@ -1,0 +1,35 @@
+id: 10_add_reminder_milk
+title: "Create a Reminder in Reminders"
+difficulty: hard
+goal: "Open Reminders, tap New Reminder, and type 'Buy oat milk'."
+start_state:
+  home: true
+  launch: "Reminders"
+  settle_s: 1.0
+budget:
+  max_steps: 18
+  max_time_seconds: 90.0
+predicates:
+  type: all_of
+  predicates:
+    - type: ocr_text_contains
+      text: "Buy oat milk"
+    - type: any_of
+      predicates:
+        - type: ocr_text_contains
+          text: "Details"
+        - type: ocr_text_contains
+          text: "Done"
+        - type: ocr_text_contains
+          text: "Reminders"
+        - type: ocr_text_contains
+          text: "Lists"
+reliability:
+  level: high
+  note: "Newly typed reminder text 'Buy oat milk' is displayed in high-contrast text and reliably detected by OCR, alongside standard navigation/action controls."
+safety:
+  touches_accounts: false
+  sends_messages: false
+  makes_purchases: false
+  deletes_data: false
+  notes: "Adds a harmless local reminder entry; no notifications sent or data deleted."
