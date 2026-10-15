@@ -1,0 +1,39 @@
+id: 03_open_calculator_clear
+title: "Open Calculator and Clear Display"
+difficulty: easy
+goal: "Open the Calculator app and clear any active value on the display."
+start_state:
+  home: true
+  launch: "Calculator"
+  settle_s: 1.0
+budget:
+  max_steps: 8
+  max_time_seconds: 40.0
+predicates:
+  type: all_of
+  predicates:
+    - type: any_of
+      predicates:
+        - type: ocr_text_contains
+          text: "AC"
+        - type: ocr_text_contains
+          text: "C"
+    - type: any_of
+      predicates:
+        - type: ocr_text_contains
+          text: "+"
+        - type: ocr_text_contains
+          text: "÷"
+        - type: ocr_text_contains
+          text: "="
+        - type: ocr_text_contains
+          text: "0"
+reliability:
+  level: high
+  note: "Calculator keypad buttons ('AC' or 'C', plus operator keys) are high-contrast grid elements easily recognized by OCR."
+safety:
+  touches_accounts: false
+  sends_messages: false
+  makes_purchases: false
+  deletes_data: false
+  notes: "Calculator key interactions only."

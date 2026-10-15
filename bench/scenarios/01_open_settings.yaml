@@ -1,0 +1,33 @@
+id: 01_open_settings
+title: "Open Settings"
+difficulty: easy
+goal: "Open the Settings app on the iPhone."
+start_state:
+  home: true
+  launch: null
+  settle_s: 1.0
+budget:
+  max_steps: 6
+  max_time_seconds: 30.0
+predicates:
+  type: all_of
+  predicates:
+    - type: ocr_text_contains
+      text: "Settings"
+    - type: any_of
+      predicates:
+        - type: ocr_text_contains
+          text: "General"
+        - type: ocr_text_contains
+          text: "Wi-Fi"
+        - type: ocr_text_contains
+          text: "Bluetooth"
+reliability:
+  level: high
+  note: "Settings root page displays a prominent 'Settings' title and standard sections ('General', 'Wi-Fi', 'Bluetooth') that OCR recognizes reliably."
+safety:
+  touches_accounts: false
+  sends_messages: false
+  makes_purchases: false
+  deletes_data: false
+  notes: "Navigation only to root Settings; no settings modified."

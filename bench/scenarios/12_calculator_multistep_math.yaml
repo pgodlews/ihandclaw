@@ -1,0 +1,35 @@
+id: 12_calculator_multistep_math
+title: "Multi-Step Calculation in Calculator (125 * 8 = 1000)"
+difficulty: hard
+goal: "Open Calculator, multiply 125 by 8, press equals, and show the result 1000 on screen."
+start_state:
+  home: true
+  launch: "Calculator"
+  settle_s: 1.0
+budget:
+  max_steps: 20
+  max_time_seconds: 90.0
+predicates:
+  type: all_of
+  predicates:
+    - type: any_of
+      predicates:
+        - type: ocr_text_contains
+          text: "1,000"
+        - type: ocr_text_contains
+          text: "1000"
+    - type: any_of
+      predicates:
+        - type: ocr_text_contains
+          text: "AC"
+        - type: ocr_text_contains
+          text: "C"
+reliability:
+  level: high
+  note: "After computing 125 * 8 =, iOS Calculator displays '1,000' (or '1000' depending on locale) in the primary result label, clearly captured by OCR alongside keypad clear button."
+safety:
+  touches_accounts: false
+  sends_messages: false
+  makes_purchases: false
+  deletes_data: false
+  notes: "Keypad inputs only for standard calculation."

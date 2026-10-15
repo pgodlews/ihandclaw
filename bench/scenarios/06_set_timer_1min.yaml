@@ -1,0 +1,29 @@
+id: 06_set_timer_1min
+title: "Set a 1-Minute Timer in Clock"
+difficulty: medium
+goal: "In the Clock app Timer tab, configure a 1-minute timer and start the countdown."
+start_state:
+  home: true
+  launch: "Clock"
+  settle_s: 1.0
+budget:
+  max_steps: 15
+  max_time_seconds: 75.0
+predicates:
+  type: all_of
+  predicates:
+    - type: ocr_text_contains
+      text: "Pause"
+    - type: ocr_text_contains
+      text: "Cancel"
+    - type: ocr_text_matches
+      pattern: "(00:5[0-9]|0:5[0-9]|1:00|00:00:5[0-9])"
+reliability:
+  level: high
+  note: "Starting a timer swaps the green 'Start' button for an orange 'Pause' button, enables the 'Cancel' button, and renders a live decreasing countdown showing seconds (e.g., 00:59 or 0:59), all verified by OCR."
+safety:
+  touches_accounts: false
+  sends_messages: false
+  makes_purchases: false
+  deletes_data: false
+  notes: "Starts a standard 1-minute countdown in Clock."

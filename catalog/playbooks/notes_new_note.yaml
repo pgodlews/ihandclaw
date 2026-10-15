@@ -1,0 +1,35 @@
+schema_version: 1
+id: notes_new_note
+app_name: Notes
+task: Create a new note without changing existing notes
+ios_version: 'iOS 18'
+locale: en_US
+entry_steps:
+  - 'Press cmd+space, type Notes, press enter; inspect the resulting screen.'
+  - 'If an old note is open, return to the note list without modifying it.'
+  - 'From the note list use Compose at bottom-right; inspect before typing.'
+landmarks:
+  - Notes
+  - Folders
+  - Search
+gotchas:
+  - 'Compose is bottom-right; New Folder is bottom-left in the folders view. The icons may have no OCR text.'
+  - 'iOS 18 Math Notes rewrites lines ending in =; use Result: followed by the value for Benchy.'
+  - 'A focused text field may hide the pointer. Press esc to end editing and inspect again; this may also dismiss a dialog.'
+locale_notes:
+  - 'These landmarks assume English UI. Supply translated landmarks in a separate locale playbook.'
+  - 'Disable hardware keyboard autocorrection: non-English hardware keyboard autocorrect (observed with Polish) garbled typed English in the owner observation.'
+verification:
+  - 'Read the new note on the final screenshot; compare every requested line.'
+  - 'For Benchy use the harness C1-C4 verdict; do not self-grade.'
+evidence:
+  - status: read
+    source: 'Owner-supplied Notes compose/New Folder observation'
+    scope: 'Owner-supplied navigation lesson; not independently remeasured in this prototype.'
+  - status: measured
+    source: 'bench/README.md, iOS 18 Math Notes observation'
+    scope: 'Existing owner observation of automatic rewriting; no new hardware run.'
+  - status: measured
+    source: 'deploy/README.md, pointer recovery observation; owner-supplied autocorrect observation'
+    scope: 'Owner observations; esc restored the pointer in three editing fields and ended editing.'
+safety: 'Create only a fresh note with authorized nonprivate text; never delete or overwrite old notes.'

@@ -1,0 +1,22 @@
+id: 00_benchy
+title: iPhone Benchy
+difficulty: gold
+goal: '1) In Calculator compute {calc_a} x {calc_b}. 2) In Settings > General > About read the iOS Version. 3) In Notes create a NEW note with exactly three lines: "Benchy {run_id}", "iOS <the version you read>", "Result: <the result>". Leave that note open on screen. 4) Finish by printing one line: BENCH_RESULT {"success": true|false, "ios_version": "...", "calc_result": "<the Calculator result>"}.'
+start_state:
+  reset:
+    - calculator_cleared
+    - notes_list
+  home: true
+  settle_s: 1.0
+budget:
+  max_steps: 60
+  max_time_seconds: 1200
+predicates:
+  type: ocr_text_contains
+  text: 'Benchy {run_id}'
+reliability:
+  level: medium
+  note: Final OCR verifies the unique title and version/calculation lines; structured output independently verifies values.
+safety:
+  deletes_data: false
+  notes: OCR-verified Calculator clear and Notes list/folder navigation; old notes accumulate. Never edit or delete existing notes during setup.

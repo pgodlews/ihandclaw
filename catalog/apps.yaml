@@ -1,0 +1,544 @@
+# iOS 18 Stock Apps Catalog for iphone-hand
+# Target Device: iPhone XS (iOS 18, English UI)
+# Coordinate System & Landmark Resolution: 375x812 pt (screen scale 2x/3x)
+# Claim status key:
+#   - read: Verified via Apple Documentation, HIG, or iOS 18 system specifications
+#   - measured: Directly observed from test fixtures in this repo
+#   - unknown - verify on device: Subject to initial setup state, permissions, or device config
+
+version: "1.0.0"
+os_version: "iOS 18"
+locale: "en_US"
+
+apps:
+  - id: app_store
+    display_name: "App Store"
+    spotlight_query: "App Store"
+    bundle_id: "com.apple.AppStore"
+    first_screen_landmarks:
+      - "Today"
+      - "Games"
+      - "Apps"
+      - "Arcade"
+      - "Search"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/app-store-iph3901a5fa/ios"
+    first_screen_notes: "Standard five-tab navigation bar at bottom: Today, Games, Apps, Arcade, Search."
+    verification_notes: "OCR typically detects bottom tab bar labels or top user profile avatar."
+
+  - id: books
+    display_name: "Books"
+    spotlight_query: "Books"
+    bundle_id: "com.apple.iBooks"
+    first_screen_landmarks:
+      - "Home"
+      - "Library"
+      - "Book Store"
+      - "Search"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/apple-books-iph3d26786c/ios"
+    first_screen_notes: "Bottom tab bar with Home, Library, Book Store, Search."
+    verification_notes: "May show 'Welcome to Apple Books' modal on very first clean launch (unknown - verify on device)."
+
+  - id: calculator
+    display_name: "Calculator"
+    spotlight_query: "Calculator"
+    bundle_id: "com.apple.calculator"
+    first_screen_landmarks:
+      - "0"
+      - "AC"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/calculator-iph3d267875/ios"
+    first_screen_notes: "Keypad grid with digits 0-9, clear key (AC/C), operations (+,-,*,/), and math notes button."
+    verification_notes: "Large digital display starts with '0' in top right; 'AC' key at top-left of number pad."
+
+  - id: calendar
+    display_name: "Calendar"
+    spotlight_query: "Calendar"
+    bundle_id: "com.apple.mobilecal"
+    first_screen_landmarks:
+      - "Today"
+      - "Calendars"
+      - "Inbox"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/calendar-iph3d26788a/ios"
+    first_screen_notes: "Bottom bar contains 'Today' on left, 'Calendars' in center, 'Inbox' on right."
+    verification_notes: "Top header shows current month and year (e.g. October 2026)."
+
+  - id: camera
+    display_name: "Camera"
+    spotlight_query: "Camera"
+    bundle_id: "com.apple.camera"
+    first_screen_landmarks:
+      - "PHOTO"
+      - "VIDEO"
+      - "PORTRAIT"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/camera-iph263472978/ios"
+    first_screen_notes: "Viewfinder screen with capture modes (TIME-LAPSE, SLO-MO, CINEMATIC, VIDEO, PHOTO, PORTRAIT, PANO)."
+    verification_notes: "Active mode is highlighted in yellow (default PHOTO)."
+
+  - id: clock
+    display_name: "Clock"
+    spotlight_query: "Clock"
+    bundle_id: "com.apple.mobiletimer"
+    first_screen_landmarks:
+      - "World Clock"
+      - "Alarm"
+      - "Stopwatch"
+      - "Timer"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/clock-iph3d26789b/ios"
+    first_screen_notes: "Bottom tab bar with World Clock, Alarm, Stopwatch, Timer."
+    verification_notes: "Initial launch opens to the last active tab (typically World Clock or Alarm)."
+
+  - id: compass
+    display_name: "Compass"
+    spotlight_query: "Compass"
+    bundle_id: "com.apple.compass"
+    first_screen_landmarks:
+      - "°"
+      - "N"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/compass-iph3d2678ac/ios"
+    first_screen_notes: "Large circular dial with degree readout and cardinal orientation."
+    verification_notes: "May prompt for Location Services access on first launch (unknown - verify on device)."
+
+  - id: contacts
+    display_name: "Contacts"
+    spotlight_query: "Contacts"
+    bundle_id: "com.apple.MobileAddressBook"
+    first_screen_landmarks:
+      - "Contacts"
+      - "Lists"
+      - "Search"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/contacts-iph3d2678bd/ios"
+    first_screen_notes: "Header 'Contacts' with 'Lists' top-left button and Search bar below header."
+    verification_notes: "Shows 'My Card' at top of contact list if configured."
+
+  - id: facetime
+    display_name: "FaceTime"
+    spotlight_query: "FaceTime"
+    bundle_id: "com.apple.facetime"
+    first_screen_landmarks:
+      - "FaceTime"
+      - "New FaceTime"
+      - "Create Link"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/facetime-iph3d2678ce/ios"
+    first_screen_notes: "Green 'New FaceTime' button and 'Create Link' button."
+    verification_notes: "Header says 'FaceTime' with call history list below buttons."
+
+  - id: files
+    display_name: "Files"
+    spotlight_query: "Files"
+    bundle_id: "com.apple.DocumentsApp"
+    first_screen_landmarks:
+      - "Recents"
+      - "Shared"
+      - "Browse"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/files-iph46a0665b3/ios"
+    first_screen_notes: "Three-tab bar at bottom: Recents, Shared, Browse."
+    verification_notes: "Under Browse tab, shows 'Locations', 'iCloud Drive', and 'On My iPhone'."
+
+  - id: find_my
+    display_name: "Find My"
+    spotlight_query: "Find My"
+    bundle_id: "com.apple.findmy"
+    first_screen_landmarks:
+      - "People"
+      - "Devices"
+      - "Items"
+      - "Me"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/find-my-iph6445ea2e8/ios"
+    first_screen_notes: "Map view with bottom card sheet containing tabs: People, Devices, Items, Me."
+    verification_notes: "Requires Location Services; map rendered in background."
+
+  - id: fitness
+    display_name: "Fitness"
+    spotlight_query: "Fitness"
+    bundle_id: "com.apple.Fitness"
+    first_screen_landmarks:
+      - "Summary"
+      - "Sharing"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/fitness-iph49f05a964/ios"
+    first_screen_notes: "Bottom tab bar has Summary and Sharing (plus Fitness+ if subscribed)."
+    verification_notes: "Displays Move / Activity rings or summary cards."
+
+  - id: freeform
+    display_name: "Freeform"
+    spotlight_query: "Freeform"
+    bundle_id: "com.apple.freeform"
+    first_screen_landmarks:
+      - "All Boards"
+      - "Recent"
+      - "Shared"
+      - "Favorites"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/freeform-iph89dd6f06a/ios"
+    first_screen_notes: "Board overview screen with category list and new board creation icon."
+    verification_notes: "First launch may show feature introduction sheet (unknown - verify on device)."
+
+  - id: health
+    display_name: "Health"
+    spotlight_query: "Health"
+    bundle_id: "com.apple.Health"
+    first_screen_landmarks:
+      - "Summary"
+      - "Sharing"
+      - "Browse"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/health-iph8e3a24160/ios"
+    first_screen_notes: "Bottom tab bar: Summary, Sharing, Browse."
+    verification_notes: "Top header says 'Summary' with user profile picture."
+
+  - id: home
+    display_name: "Home"
+    spotlight_query: "Home"
+    bundle_id: "com.apple.Home"
+    first_screen_landmarks:
+      - "Home"
+      - "Climate"
+      - "Lights"
+      - "Security"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/home-iph0a49852f5/ios"
+    first_screen_notes: "Home header with category pills (Climate, Lights, Security, Speakers) and accessory tiles."
+    verification_notes: "If no accessories configured, shows 'Welcome Home' or empty room screen."
+
+  - id: journal
+    display_name: "Journal"
+    spotlight_query: "Journal"
+    bundle_id: "com.apple.Journal"
+    first_screen_landmarks:
+      - "Journal"
+      - "Entries"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/journal-iph0d216503c/ios"
+    first_screen_notes: "Header 'Journal' with '+' button for new entry."
+    verification_notes: "May require Face ID / passcode unlock if app lock is enabled (unknown - verify on device)."
+
+  - id: magnifier
+    display_name: "Magnifier"
+    spotlight_query: "Magnifier"
+    bundle_id: "com.apple.magnifier"
+    first_screen_landmarks:
+      - "Magnifier"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/magnifier-iph3cf5062a/ios"
+    first_screen_notes: "Camera feed with large zoom slider and utility icons (brightness, contrast, flashlight)."
+    verification_notes: "OCR finds zoom percentage slider and control buttons."
+
+  - id: mail
+    display_name: "Mail"
+    spotlight_query: "Mail"
+    bundle_id: "com.apple.mobilemail"
+    first_screen_landmarks:
+      - "Mailboxes"
+      - "Inbox"
+      - "Edit"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/mail-iph3d2678df/ios"
+    first_screen_notes: "Top header with 'Mailboxes' navigation or 'Inbox' title, and 'Edit' button."
+    verification_notes: "Bottom bar has compose icon (square with pencil) at bottom-right."
+
+  - id: maps
+    display_name: "Maps"
+    spotlight_query: "Maps"
+    bundle_id: "com.apple.Maps"
+    first_screen_landmarks:
+      - "Search Maps"
+      - "Favorites"
+      - "Recents"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/maps-iph3d2678f0/ios"
+    first_screen_notes: "Search Maps text field embedded in bottom pull-up card."
+    verification_notes: "Card contains 'Favorites', 'Recents', and guide suggestions."
+
+  - id: measure
+    display_name: "Measure"
+    spotlight_query: "Measure"
+    bundle_id: "com.apple.measure"
+    first_screen_landmarks:
+      - "Measure"
+      - "Level"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/measure-iph268045582/ios"
+    first_screen_notes: "Two-tab bottom switcher: 'Measure' and 'Level'."
+    verification_notes: "First screen displays AR camera prompt ('Move iPhone to start')."
+
+  - id: messages
+    display_name: "Messages"
+    spotlight_query: "Messages"
+    bundle_id: "com.apple.MobileSMS"
+    first_screen_landmarks:
+      - "Messages"
+      - "Search"
+      - "Edit"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/messages-iph3d267901/ios"
+    first_screen_notes: "Top header 'Messages' with 'Edit' top-left and compose button top-right."
+    verification_notes: "Search bar positioned directly beneath 'Messages' large title."
+
+  - id: music
+    display_name: "Music"
+    spotlight_query: "Music"
+    bundle_id: "com.apple.Music"
+    first_screen_landmarks:
+      - "Home"
+      - "Radio"
+      - "Library"
+      - "Search"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/apple-music-iph3d267912/ios"
+    first_screen_notes: "Bottom tab bar has Home, Radio, Library, Search."
+    verification_notes: "Header displays 'Home' or 'Library' depending on default tab."
+
+  - id: news
+    display_name: "News"
+    spotlight_query: "News"
+    bundle_id: "com.apple.news"
+    first_screen_landmarks:
+      - "Today"
+      - "Sports"
+      - "Audio"
+      - "Following"
+      - "Search"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/apple-news-iph0bb7f97b/ios"
+    first_screen_notes: "Five-tab bar at bottom: Today, Sports, Audio, Following, Search."
+    verification_notes: "Top banner contains 'Apple News' and current date."
+
+  - id: notes
+    display_name: "Notes"
+    spotlight_query: "Notes"
+    bundle_id: "com.apple.mobilenotes"
+    first_screen_landmarks:
+      - "Notes"
+      - "Folders"
+      - "Quick Notes"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/notes-iph3d267923/ios"
+    first_screen_notes: "Large title 'Notes' or 'Folders' with back button top-left."
+    verification_notes: "Bottom bar has note count in center and new note button (square with pencil) at bottom-right."
+
+  - id: passwords
+    display_name: "Passwords"
+    spotlight_query: "Passwords"
+    bundle_id: "com.apple.Passwords"
+    first_screen_landmarks:
+      - "Passwords"
+      - "All"
+      - "Passkeys"
+      - "Codes"
+      - "Security"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/passwords-iph53f06c138/ios"
+    first_screen_notes: "New dedicated app in iOS 18. Large title 'Passwords' with categorized tiles."
+    verification_notes: "IMPORTANT: Protected by Face ID / passcode. Agent safety rule: do NOT type passwords."
+
+  - id: phone
+    display_name: "Phone"
+    spotlight_query: "Phone"
+    bundle_id: "com.apple.mobilephone"
+    first_screen_landmarks:
+      - "Favorites"
+      - "Recents"
+      - "Contacts"
+      - "Keypad"
+      - "Voicemail"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/phone-iph3d267934/ios"
+    first_screen_notes: "Five-tab bottom bar: Favorites, Recents, Contacts, Keypad, Voicemail."
+    verification_notes: "Keypad tab displays numeric phone dialer with green call button."
+
+  - id: photos
+    display_name: "Photos"
+    spotlight_query: "Photos"
+    bundle_id: "com.apple.mobileslideshow"
+    first_screen_landmarks:
+      - "Photos"
+      - "Recent Days"
+      - "Albums"
+      - "Search"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/photos-iph3d267945/ios"
+    first_screen_notes: "iOS 18 unified single-view layout: top photo grid with collections scrollable below."
+    verification_notes: "Collections section headers: 'Recent Days', 'Albums', 'People & Pets', 'Memories'."
+
+  - id: podcasts
+    display_name: "Podcasts"
+    spotlight_query: "Podcasts"
+    bundle_id: "com.apple.podcasts"
+    first_screen_landmarks:
+      - "Home"
+      - "Browse"
+      - "Library"
+      - "Search"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/podcasts-iph3d267956/ios"
+    first_screen_notes: "Bottom tab bar has Home, Browse, Library, Search."
+    verification_notes: "'Up Next' carousel at the top of Home tab."
+
+  - id: reminders
+    display_name: "Reminders"
+    spotlight_query: "Reminders"
+    bundle_id: "com.apple.reminders"
+    first_screen_landmarks:
+      - "Today"
+      - "Scheduled"
+      - "All"
+      - "Flagged"
+      - "Add Reminder"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/reminders-iph3d267967/ios"
+    first_screen_notes: "Smart lists grid at top (Today, Scheduled, All, Flagged, Completed)."
+    verification_notes: "'Add Reminder' button at bottom-left, 'Add List' at bottom-right."
+
+  - id: safari
+    display_name: "Safari"
+    spotlight_query: "Safari"
+    bundle_id: "com.apple.mobilesafari"
+    first_screen_landmarks:
+      - "Favorites"
+      - "Search or enter website name"
+      - "Tabs"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/safari-iph3d267978/ios"
+    first_screen_notes: "Bottom address bar with 'Search or enter website name' and start page favorites."
+    verification_notes: "Bottom bar icons include back/forward arrows, share button, bookmarks, and tabs button."
+
+  - id: settings
+    display_name: "Settings"
+    spotlight_query: "Settings"
+    bundle_id: "com.apple.Preferences"
+    first_screen_landmarks:
+      - "Settings"
+      - "Search"
+      - "Airplane Mode"
+      - "Wi-Fi"
+      - "Bluetooth"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/find-settings-iph3bd391559/ios"
+    first_screen_notes: "Top title 'Settings', profile card, search bar, and primary connectivity toggles."
+    verification_notes: "Root page has 'Airplane Mode' toggle, 'Wi-Fi', 'Bluetooth', 'Cellular' groups."
+
+  - id: shortcuts
+    display_name: "Shortcuts"
+    spotlight_query: "Shortcuts"
+    bundle_id: "com.apple.shortcuts"
+    first_screen_landmarks:
+      - "Shortcuts"
+      - "Automation"
+      - "Gallery"
+    status: "read"
+    source: "https://support.apple.com/guide/shortcuts/welcome/ios"
+    first_screen_notes: "Bottom tab bar has Shortcuts, Automation, Gallery."
+    verification_notes: "Top navigation shows 'All Shortcuts' with '+' icon at top-right to create new shortcut."
+
+  - id: stocks
+    display_name: "Stocks"
+    spotlight_query: "Stocks"
+    bundle_id: "com.apple.stocks"
+    first_screen_landmarks:
+      - "Watchlist"
+      - "Business News"
+      - "Search"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/stocks-iph3d26799a/ios"
+    first_screen_notes: "Top title 'Watchlist' with ticker symbols and current values; news feed below."
+    verification_notes: "Search bar at top; date line above symbols list."
+
+  - id: tips
+    display_name: "Tips"
+    spotlight_query: "Tips"
+    bundle_id: "com.apple.tips"
+    first_screen_landmarks:
+      - "Collections"
+      - "Search"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/tips-iph8964d84f2/ios"
+    first_screen_notes: "Shows 'Collections' cards (e.g. 'What's New in iOS 18', 'iPhone Essentials')."
+    verification_notes: "Search field located at top."
+
+  - id: translate
+    display_name: "Translate"
+    spotlight_query: "Translate"
+    bundle_id: "com.apple.Translate"
+    first_screen_landmarks:
+      - "Translation"
+      - "Camera"
+      - "Conversation"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/translate-iph1a660d3d8/ios"
+    first_screen_notes: "Three-tab bottom bar: Translation, Camera, Conversation."
+    verification_notes: "Language selector dropdown pills displayed prominently at top."
+
+  - id: tv
+    display_name: "TV"
+    spotlight_query: "TV"
+    bundle_id: "com.apple.tv"
+    first_screen_landmarks:
+      - "Home"
+      - "Apple TV+"
+      - "Library"
+      - "Search"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/tv-iph3d2679ab/ios"
+    first_screen_notes: "Bottom tab bar has Home, Apple TV+, MLS Season Pass, Library, Search."
+    verification_notes: "'Up Next' carousel on Home tab."
+
+  - id: voice_memos
+    display_name: "Voice Memos"
+    spotlight_query: "Voice Memos"
+    bundle_id: "com.apple.VoiceMemos"
+    first_screen_landmarks:
+      - "All Recordings"
+      - "Record"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/voice-memos-iph3d2679bc/ios"
+    first_screen_notes: "List of recordings with large red circular record button at the bottom."
+    verification_notes: "Header says 'All Recordings' with 'Edit' button at top-right."
+
+  - id: wallet
+    display_name: "Wallet"
+    spotlight_query: "Wallet"
+    bundle_id: "com.apple.Passbook"
+    first_screen_landmarks:
+      - "Wallet"
+      - "Cards"
+      - "Passes"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/wallet-iph3d2679cd/ios"
+    first_screen_notes: "Header 'Wallet' with '+' button at top-right to add cards."
+    verification_notes: "Cards are displayed in stacked format. Safety rule: NEVER confirm payments."
+
+  - id: watch
+    display_name: "Watch"
+    spotlight_query: "Watch"
+    bundle_id: "com.apple.Bridge"
+    first_screen_landmarks:
+      - "My Watch"
+      - "Face Gallery"
+      - "Discover"
+    status: "read"
+    source: "https://support.apple.com/guide/watch/welcome/watchos"
+    first_screen_notes: "Three-tab bar at bottom: My Watch, Face Gallery, Discover."
+    verification_notes: "Shows paired Apple Watch or 'Start Pairing' button if unlinked."
+
+  - id: weather
+    display_name: "Weather"
+    spotlight_query: "Weather"
+    bundle_id: "com.apple.weather"
+    first_screen_landmarks:
+      - "Hourly Forecast"
+      - "10-Day Forecast"
+      - "Air Quality"
+    status: "read"
+    source: "https://support.apple.com/guide/iphone/weather-iph3d2679de/ios"
+    first_screen_notes: "Top shows City Name, current temperature with '°', condition text (e.g. Sunny, Cloudy)."
+    verification_notes: "Scroll cards contain 'Hourly Forecast', '10-Day Forecast', 'Air Quality', 'UV Index'."

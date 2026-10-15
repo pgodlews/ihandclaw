@@ -1,0 +1,3 @@
+#!/bin/sh
+# Phone CLI for agent harnesses: one fixed executable path that permission rules can allow.
+cd "$(dirname "$0")/../.." && exec uv run --project host python -m bench.agents.phone_cli "$@"

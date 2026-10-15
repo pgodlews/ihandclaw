@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.iphone-hand.uxplay</string>
+    <!-- Replace every &lt;HOME&gt; placeholder with the absolute home directory. launchd expands nothing. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>&lt;HOME&gt;/.local/bin/uxplay</string>
+        <string>-n</string>
+        <string>iPhone Hand Mac</string>
+        <string>-nh</string>
+        <string>-key</string>
+        <string>&lt;HOME&gt;/.config/iphone-hand/uxplay.pem</string>
+        <string>-s</string>
+        <string>1125x2436@60</string>
+        <string>-fps</string>
+        <string>60</string>
+        <string>-as</string>
+        <string>0</string>
+        <string>-avdec</string>
+        <!-- Read (UxPlay README): macOS drops frames with timestamp sync; use -vsync no. -->
+        <string>-vsync</string>
+        <string>no</string>
+        <string>-vs</string>
+        <!-- Frames go to the RAM disk the wrapper creates (deploy/macos/ramdisk.sh logic). -->
+        <string>jpegenc quality=90 ! multifilesink location=/Volumes/iphone-hand-frames/frames/f%05d.jpg max-files=5</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>&lt;HOME&gt;</string>
+        <key>IPHONE_HAND_FRAMES</key>
+        <string>/Volumes/iphone-hand-frames/frames</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <!-- Equivalent of Restart=always, RestartSec=1. -->
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>1</integer>
+    <key>StandardOutPath</key>
+    <string>&lt;HOME&gt;/Library/Logs/iphone-hand-uxplay.log</string>
+    <key>StandardErrorPath</key>
+    <string>&lt;HOME&gt;/Library/Logs/iphone-hand-uxplay.log</string>
+</dict>
+</plist>

@@ -1,0 +1,23 @@
+[Unit]
+Description=iPhone Hand persistent AirPlay receiver
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+RuntimeDirectory=iphone-hand/frames
+RuntimeDirectoryMode=0700
+UMask=0077
+# Clear only receiver frames when this unit starts, never on daemon redeploy.
+ExecStartPre=/usr/bin/find %t/iphone-hand/frames -maxdepth 1 -type f -name f*.jpg -delete
+# Read: matches UxPlaySupervisor.command(); systemd needs %% for a literal percent.
+ExecStart=%h/.local/bin/uxplay -n "iPhone Hand" -nh -key %h/.config/iphone-hand/uxplay.pem -s 1125x2436@60 -fps 60 -as 0 -avdec -vs "jpegenc quality=90 ! multifilesink location=%t/iphone-hand/frames/f%%05d.jpg max-files=5"
+Restart=always
+RestartSec=1
+SyslogIdentifier=iphone-hand-uxplay
+NoNewPrivileges=true
+KillMode=control-group
+TimeoutStopSec=15
+
+[Install]
+WantedBy=default.target

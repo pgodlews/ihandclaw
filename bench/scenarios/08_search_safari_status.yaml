@@ -1,0 +1,41 @@
+id: 08_search_safari_status
+title: "Search the Web in Safari for Apple Status"
+difficulty: medium
+goal: "Open Safari, tap the address/search bar, and search for 'apple status'."
+start_state:
+  home: true
+  launch: "Safari"
+  settle_s: 1.0
+budget:
+  max_steps: 15
+  max_time_seconds: 80.0
+predicates:
+  type: all_of
+  predicates:
+    - type: any_of
+      predicates:
+        - type: ocr_text_contains
+          text: "apple status"
+        - type: ocr_text_contains
+          text: "System Status"
+        - type: ocr_text_contains
+          text: "apple.com"
+    - type: any_of
+      predicates:
+        - type: ocr_text_contains
+          text: "Apple"
+        - type: ocr_text_contains
+          text: "Search"
+        - type: ocr_text_contains
+          text: "Results"
+        - type: ocr_text_contains
+          text: "Tabs"
+reliability:
+  level: high
+  note: "Search results page or URL bar reliably reflects search terms ('apple status', 'System Status', 'apple.com') in OCR."
+safety:
+  touches_accounts: false
+  sends_messages: false
+  makes_purchases: false
+  deletes_data: false
+  notes: "Pure search query to a public status page; no logins, purchases or form submissions."

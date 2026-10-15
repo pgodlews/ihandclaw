@@ -1,0 +1,397 @@
+# iOS 18 Settings Destinations Catalog for iphone-hand
+# Target Device: iPhone XS (iOS 18, English UI)
+# Coordinate System & Landmark Resolution: 375x812 pt
+#
+# Rules & Attribution:
+#   - spotlight_direct_status:
+#       * 'read' (with an Apple source URL): Apple officially documents Spotlight finding/opening this setting directly.
+#       * 'unknown - verify on device': Behavior on an actual device must be tested (e.g. deep-pane jumps, hardware dependencies).
+#   - status: Overall verification level of the navigation path and OCR landmarks.
+
+version: "1.0.0"
+os_version: "iOS 18"
+locale: "en_US"
+
+destinations:
+  - id: wifi
+    display_name: "Wi-Fi"
+    navigation_path:
+      - "Settings"
+      - "Wi-Fi"
+    spotlight_query: "Wi-Fi"
+    spotlight_jumps_directly: true
+    spotlight_direct_status: "read"
+    spotlight_source_url: "https://support.apple.com/guide/iphone/find-settings-iph3bd391559/ios"
+    landmark_texts:
+      - "Wi-Fi"
+      - "NETWORKS"
+      - "Ask to Join Networks"
+      - "Auto-Join Hotspot"
+    status: "read"
+    notes: "Spotlight indexing provides direct shortcut to Wi-Fi pane or quick switch."
+
+  - id: bluetooth
+    display_name: "Bluetooth"
+    navigation_path:
+      - "Settings"
+      - "Bluetooth"
+    spotlight_query: "Bluetooth"
+    spotlight_jumps_directly: true
+    spotlight_direct_status: "read"
+    spotlight_source_url: "https://support.apple.com/guide/iphone/find-settings-iph3bd391559/ios"
+    landmark_texts:
+      - "Bluetooth"
+      - "MY DEVICES"
+      - "OTHER DEVICES"
+    status: "read"
+    notes: "Directly accessible from Spotlight; top toggle enables/disables BLE radio."
+
+  - id: display_and_brightness
+    display_name: "Display & Brightness"
+    navigation_path:
+      - "Settings"
+      - "Display & Brightness"
+    spotlight_query: "Display & Brightness"
+    spotlight_jumps_directly: true
+    spotlight_direct_status: "read"
+    spotlight_source_url: "https://support.apple.com/guide/iphone/find-settings-iph3bd391559/ios"
+    landmark_texts:
+      - "Display & Brightness"
+      - "APPEARANCE"
+      - "Light"
+      - "Dark"
+      - "Automatic"
+      - "BRIGHTNESS"
+      - "True Tone"
+      - "Auto-Lock"
+    status: "read"
+    notes: "Houses Appearance controls (Dark Mode), brightness slider, Night Shift, and Auto-Lock."
+
+  - id: dark_mode
+    display_name: "Dark Mode"
+    navigation_path:
+      - "Settings"
+      - "Display & Brightness"
+      - "Appearance"
+    spotlight_query: "Dark Mode"
+    spotlight_jumps_directly: null
+    spotlight_direct_status: "unknown - verify on device"
+    spotlight_source_url: null
+    landmark_texts:
+      - "Display & Brightness"
+      - "APPEARANCE"
+      - "Light"
+      - "Dark"
+      - "Automatic"
+    status: "read"
+    notes: "In Spotlight, 'Dark Mode' often offers an action toggle or deep links into Display & Brightness. Must verify whether it jumps directly to pane without intermediate prompt."
+
+  - id: assistivetouch
+    display_name: "Accessibility > Touch > AssistiveTouch"
+    navigation_path:
+      - "Settings"
+      - "Accessibility"
+      - "Touch"
+      - "AssistiveTouch"
+    spotlight_query: "AssistiveTouch"
+    spotlight_jumps_directly: null
+    spotlight_direct_status: "unknown - verify on device"
+    spotlight_source_url: null
+    landmark_texts:
+      - "AssistiveTouch"
+      - "Single-Tap"
+      - "Double-Tap"
+      - "Long Press"
+      - "CUSTOM ACTIONS"
+      - "POINTER DEVICES"
+      - "Tracking Speed"
+    status: "read"
+    notes: "Critical for iphone-hand pointer tracking. While Apple documents searching settings from Spotlight, deep child pane jump for AssistiveTouch must be verified on device. Can also be toggled via Apple Shortcuts."
+
+  - id: voice_control
+    display_name: "Voice Control"
+    navigation_path:
+      - "Settings"
+      - "Accessibility"
+      - "Voice Control"
+    spotlight_query: "Voice Control"
+    spotlight_jumps_directly: null
+    spotlight_direct_status: "unknown - verify on device"
+    spotlight_source_url: null
+    landmark_texts:
+      - "Voice Control"
+      - "Language"
+      - "Customize Commands"
+      - "Vocabulary"
+      - "Command Feedback"
+      - "Overlay"
+    status: "read"
+    notes: "Enables 'Item Numbers' overlay for UI element numbering (SPEC v0.2 section 8). Spotlight query behavior vs shortcut toggle to be verified on device."
+
+  - id: hardware_keyboard
+    display_name: "Keyboard > Hardware Keyboard"
+    navigation_path:
+      - "Settings"
+      - "General"
+      - "Keyboard"
+      - "Hardware Keyboard"
+    spotlight_query: "Hardware Keyboard"
+    spotlight_jumps_directly: null
+    spotlight_direct_status: "unknown - verify on device"
+    spotlight_source_url: null
+    landmark_texts:
+      - "Hardware Keyboard"
+      - "Modifier Keys"
+    status: "read"
+    notes: "Only appears in Settings when a physical or BLE keyboard is currently connected and bonded. Spotlight direct jump status is unknown until tested with active BLE keyboard."
+
+  - id: auto_lock
+    display_name: "Auto-Lock"
+    navigation_path:
+      - "Settings"
+      - "Display & Brightness"
+      - "Auto-Lock"
+    spotlight_query: "Auto-Lock"
+    spotlight_jumps_directly: null
+    spotlight_direct_status: "unknown - verify on device"
+    spotlight_source_url: null
+    landmark_texts:
+      - "Auto-Lock"
+      - "30 Seconds"
+      - "1 Minute"
+      - "2 Minutes"
+      - "3 Minutes"
+      - "4 Minutes"
+      - "5 Minutes"
+      - "Never"
+    status: "read"
+    notes: "Auto-Lock is a sub-pane of Display & Brightness. Spotlight can index setting terms, but direct pane jump vs Display & Brightness root requires on-device test."
+
+  - id: screen_time
+    display_name: "Screen Time"
+    navigation_path:
+      - "Settings"
+      - "Screen Time"
+    spotlight_query: "Screen Time"
+    spotlight_jumps_directly: true
+    spotlight_direct_status: "read"
+    spotlight_source_url: "https://support.apple.com/guide/iphone/find-settings-iph3bd391559/ios"
+    landmark_texts:
+      - "Screen Time"
+      - "Daily Average"
+      - "Downtime"
+      - "App Limits"
+      - "Communication Limits"
+      - "Always Allowed"
+      - "Content & Privacy Restrictions"
+    status: "read"
+    notes: "Top-level Settings section; directly returned in Spotlight."
+
+  - id: general_about
+    display_name: "General > About"
+    navigation_path:
+      - "Settings"
+      - "General"
+      - "About"
+    spotlight_query: "About"
+    spotlight_jumps_directly: null
+    spotlight_direct_status: "unknown - verify on device"
+    spotlight_source_url: null
+    landmark_texts:
+      - "About"
+      - "Name"
+      - "iOS Version"
+      - "Model Name"
+      - "Model Number"
+      - "Serial Number"
+    status: "read"
+    notes: "Contains model, serial, and software version details. 'About' search query may collide with generic results unless qualified as 'About Settings'."
+
+  - id: battery
+    display_name: "Battery"
+    navigation_path:
+      - "Settings"
+      - "Battery"
+    spotlight_query: "Battery"
+    spotlight_jumps_directly: true
+    spotlight_direct_status: "read"
+    spotlight_source_url: "https://support.apple.com/guide/iphone/find-settings-iph3bd391559/ios"
+    landmark_texts:
+      - "Battery"
+      - "Battery Percentage"
+      - "Low Power Mode"
+      - "Battery Health & Charging"
+      - "LAST 24 HOURS"
+    status: "read"
+    notes: "Top-level Settings category. Provides Low Power Mode switch and battery level diagnostics."
+
+  - id: full_keyboard_access
+    display_name: "Accessibility > Keyboards > Full Keyboard Access"
+    navigation_path:
+      - "Settings"
+      - "Accessibility"
+      - "Keyboards"
+      - "Full Keyboard Access"
+    spotlight_query: "Full Keyboard Access"
+    spotlight_jumps_directly: null
+    spotlight_direct_status: "unknown - verify on device"
+    spotlight_source_url: null
+    landmark_texts:
+      - "Full Keyboard Access"
+      - "Commands"
+      - "Appearance"
+      - "Auto-Hide"
+    status: "read"
+    notes: "Enables hardware keyboard UI traversal (SPEC.md lines 32-33). Deep link in Spotlight to be verified on device."
+
+  - id: general_software_update
+    display_name: "General > Software Update"
+    navigation_path:
+      - "Settings"
+      - "General"
+      - "Software Update"
+    spotlight_query: "Software Update"
+    spotlight_jumps_directly: null
+    spotlight_direct_status: "unknown - verify on device"
+    spotlight_source_url: null
+    landmark_texts:
+      - "Software Update"
+      - "Automatic Updates"
+    status: "read"
+    notes: "Displays current iOS version status and pending updates."
+
+  - id: general_iphone_storage
+    display_name: "General > iPhone Storage"
+    navigation_path:
+      - "Settings"
+      - "General"
+      - "iPhone Storage"
+    spotlight_query: "iPhone Storage"
+    spotlight_jumps_directly: null
+    spotlight_direct_status: "unknown - verify on device"
+    spotlight_source_url: null
+    landmark_texts:
+      - "iPhone Storage"
+      - "RECOMMENDATIONS"
+    status: "read"
+    notes: "Calculates storage breakdown bar and lists installed applications by size."
+
+  - id: privacy_location_services
+    display_name: "Privacy & Security > Location Services"
+    navigation_path:
+      - "Settings"
+      - "Privacy & Security"
+      - "Location Services"
+    spotlight_query: "Location Services"
+    spotlight_jumps_directly: null
+    spotlight_direct_status: "unknown - verify on device"
+    spotlight_source_url: null
+    landmark_texts:
+      - "Location Services"
+      - "Share My Location"
+    status: "read"
+    notes: "Controls global GPS and per-app location permissions."
+
+  - id: sounds_and_haptics
+    display_name: "Sounds & Haptics"
+    navigation_path:
+      - "Settings"
+      - "Sounds & Haptics"
+    spotlight_query: "Sounds & Haptics"
+    spotlight_jumps_directly: true
+    spotlight_direct_status: "read"
+    spotlight_source_url: "https://support.apple.com/guide/iphone/find-settings-iph3bd391559/ios"
+    landmark_texts:
+      - "Sounds & Haptics"
+      - "Ringtone"
+      - "Text Tone"
+      - "Haptics"
+      - "RINGTONE AND ALERTS"
+    status: "read"
+    notes: "Top-level Settings section; volume sliders and vibration patterns."
+
+  - id: notifications
+    display_name: "Notifications"
+    navigation_path:
+      - "Settings"
+      - "Notifications"
+    spotlight_query: "Notifications"
+    spotlight_jumps_directly: true
+    spotlight_direct_status: "read"
+    spotlight_source_url: "https://support.apple.com/guide/iphone/find-settings-iph3bd391559/ios"
+    landmark_texts:
+      - "Notifications"
+      - "DISPLAY AS"
+      - "Count"
+      - "Stack"
+      - "List"
+      - "SCHEDULED SUMMARY"
+    status: "read"
+    notes: "Top-level Settings section; display style (Count, Stack, List)."
+
+  - id: focus
+    display_name: "Focus"
+    navigation_path:
+      - "Settings"
+      - "Focus"
+    spotlight_query: "Focus"
+    spotlight_jumps_directly: true
+    spotlight_direct_status: "read"
+    spotlight_source_url: "https://support.apple.com/guide/iphone/find-settings-iph3bd391559/ios"
+    landmark_texts:
+      - "Focus"
+      - "Do Not Disturb"
+      - "Personal"
+      - "Sleep"
+      - "Work"
+      - "Share Across Devices"
+    status: "read"
+    notes: "Configures Do Not Disturb, Work, and Sleep profiles."
+
+  - id: cellular
+    display_name: "Cellular"
+    navigation_path:
+      - "Settings"
+      - "Cellular"
+    spotlight_query: "Cellular"
+    spotlight_jumps_directly: true
+    spotlight_direct_status: "read"
+    spotlight_source_url: "https://support.apple.com/guide/iphone/find-settings-iph3bd391559/ios"
+    landmark_texts:
+      - "Cellular"
+      - "Cellular Data"
+      - "Cellular Data Options"
+      - "Personal Hotspot"
+    status: "read"
+    notes: "Top-level Settings category for SIM and mobile carrier connection."
+
+  - id: control_centre
+    display_name: "Control Centre"
+    navigation_path:
+      - "Settings"
+      - "Control Centre"
+    spotlight_query: "Control Centre"
+    spotlight_jumps_directly: null
+    spotlight_direct_status: "unknown - verify on device"
+    spotlight_source_url: null
+    landmark_texts:
+      - "Control Centre"
+      - "INCLUDED CONTROLS"
+      - "MORE CONTROLS"
+    status: "read"
+    notes: "Configures quick-access tiles in iOS swipe-down Control Centre."
+
+  - id: wallpaper
+    display_name: "Wallpaper"
+    navigation_path:
+      - "Settings"
+      - "Wallpaper"
+    spotlight_query: "Wallpaper"
+    spotlight_jumps_directly: true
+    spotlight_direct_status: "read"
+    spotlight_source_url: "https://support.apple.com/guide/iphone/find-settings-iph3bd391559/ios"
+    landmark_texts:
+      - "Wallpaper"
+      - "Add New Wallpaper"
+    status: "read"
+    notes: "Top-level Settings destination for lock screen and home screen styling."

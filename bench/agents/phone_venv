@@ -1,0 +1,13 @@
+#!/bin/sh
+# Read-only project dependencies; all screenshots/logs retain the run-directory cwd.
+project_root=$(CDPATH= cd "$(dirname "$0")/../.." && pwd) || exit 1
+if [ -n "${IPHONE_HAND_AUTH_FILE:-}" ]; then
+    IPHONE_HAND_TOKEN=$(cat "$IPHONE_HAND_AUTH_FILE" 2>/dev/null) || {
+        printf '%s\n' '{"ok":false,"error":"AuthFileUnavailable","detail":"Phone authentication unavailable"}'
+        exit 1
+    }
+    export IPHONE_HAND_TOKEN
+fi
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONPATH="$project_root${PYTHONPATH:+:$PYTHONPATH}"
+exec "$project_root/host/.venv/bin/python" -m bench.agents.phone_cli "$@"

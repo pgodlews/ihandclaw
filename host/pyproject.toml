@@ -1,0 +1,35 @@
+[project]
+name = "iphone-hand"
+version = "0.1.0"
+description = "Visual closed-loop BLE HID control of a mirrored iPhone"
+requires-python = ">=3.11"
+dependencies = [
+  "PyYAML>=6.0.2,<7",
+  "numpy>=1.26",
+  "pillow>=10.1",
+  "opencv-python-headless>=4.9",
+  "pyserial>=3.5",
+  "mcp>=1.12,<2",
+  "fastapi>=0.115,<1",
+  "uvicorn>=0.30,<1",
+]
+
+[project.optional-dependencies]
+ocr = ["rapidocr>=3.10,<4", "onnxruntime>=1.18,<2"]
+devservices = ["pymobiledevice3==11.26.0"]
+
+[project.scripts]
+iphone-hand = "iphone_hand.cli:main"
+iphone-hand-mcp = "iphone_hand.mcp_server:main"
+iphone-hand-daemon = "iphone_hand.daemon:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

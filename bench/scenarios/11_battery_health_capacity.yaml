@@ -1,0 +1,35 @@
+id: 11_battery_health_capacity
+title: "Check Battery Health & Charging Maximum Capacity"
+difficulty: hard
+goal: "Navigate to Settings > Battery > Battery Health & Charging and verify Maximum Capacity."
+start_state:
+  home: true
+  launch: "Settings"
+  settle_s: 1.0
+budget:
+  max_steps: 20
+  max_time_seconds: 95.0
+predicates:
+  type: all_of
+  predicates:
+    - type: ocr_text_contains
+      text: "Maximum Capacity"
+    - type: any_of
+      predicates:
+        - type: ocr_text_contains
+          text: "Battery Health"
+        - type: ocr_text_contains
+          text: "Peak Performance"
+        - type: ocr_text_contains
+          text: "Charging"
+    - type: ocr_text_matches
+      pattern: "[0-9]{1,3}\\s*%"
+reliability:
+  level: high
+  note: "Requires deep nested navigation (Settings -> Battery -> Battery Health & Charging). The sub-page displays exact labels 'Maximum Capacity' and a percentage figure (e.g., '84%') which OCR reads reliably."
+safety:
+  touches_accounts: false
+  sends_messages: false
+  makes_purchases: false
+  deletes_data: false
+  notes: "Read-only inspection of battery diagnostics; no changes made."

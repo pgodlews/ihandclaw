@@ -1,0 +1,25 @@
+schema_version: 1
+id: settings_ios_version
+app_name: Settings
+task: Read the iOS version for Benchy
+ios_version: 'iOS 18'
+locale: en_US
+entry_steps:
+  - 'Press cmd+space, type Settings, press enter; inspect the screen.'
+  - 'Navigate by visible text: General, About, iOS Version.'
+landmarks:
+  - General
+  - About
+  - iOS Version
+gotchas:
+  - 'About also displays private device identifiers; keep screenshots local.'
+  - 'Spotlight results depend on indexing; do not assume a direct pane jump.'
+locale_notes:
+  - 'English text labels; verify translations and decimal/version formatting on other locales.'
+verification:
+  - 'Read the version shown on the phone; never substitute a fixture or model guess.'
+evidence:
+  - status: read
+    source: 'bench/scenarios/00_benchy.yaml; catalog/settings.yaml'
+    scope: 'Scenario-required route and catalog navigation advice; not a new device measurement.'
+safety: 'Read only; never copy identifiers into a contribution.'
